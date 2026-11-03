@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using UnityEngine.InputSystem;
 using TMPro;
@@ -32,6 +33,10 @@ public class PuzzleManager : MonoBehaviour
             notificationText.gameObject.SetActive(false);
     }
 
+    // ==============================
+    // MEMBUKA PUZZLE
+    // ==============================
+
     public void OpenPuzzle()
     {
         if (puzzlePanel == null)
@@ -46,19 +51,27 @@ public class PuzzleManager : MonoBehaviour
         puzzleSolved = false;
 
         HideNotification();
-
         ShufflePuzzle();
 
+        // Tampilkan puzzle
         puzzlePanel.SetActive(true);
 
+        // Sembunyikan Hotbar
         if (hotbarPanel != null)
             hotbarPanel.SetActive(false);
 
+        // Hentikan pergerakan karakter
         if (playerMovement != null)
             playerMovement.StopMovement();
 
-        Debug.Log("PUZZLE BERHASIL DIBUKA!");
+        Debug.Log("PUZZLE DIBUKA!");
+        Debug.Log("HOTBAR DISEMBUNYIKAN!");
+        Debug.Log("PLAYER BERHENTI BERGERAK!");
     }
+
+    // ==============================
+    // INPUT KEYBOARD
+    // ==============================
 
     void Update()
     {
@@ -69,25 +82,49 @@ public class PuzzleManager : MonoBehaviour
         if (Keyboard.current == null)
             return;
 
+        // Tombol X untuk membatalkan puzzle
         if (Keyboard.current.xKey.wasPressedThisFrame)
+        {
             CancelPuzzle();
+            return;
+        }
 
+        // Tombol Enter untuk konfirmasi
         if (Keyboard.current.enterKey.wasPressedThisFrame ||
             Keyboard.current.numpadEnterKey.wasPressedThisFrame)
+        {
             ConfirmPuzzle();
+        }
     }
+
+    // ==============================
+    // MEMBATALKAN PUZZLE
+    // ==============================
 
     public void CancelPuzzle()
     {
-        if (puzzleSolved)
-            return;
-
         HideNotification();
 
-        ClosePuzzle();
+        if (puzzlePanel != null)
+            puzzlePanel.SetActive(false);
+
+        RestorePlayerControl();
+
+        // Reset interaksi keypad
+        KeypadInteraction keypad =
+            FindFirstObjectByType<KeypadInteraction>();
+
+        if (keypad != null)
+            keypad.ResetInteraction();
 
         Debug.Log("PUZZLE DIBATALKAN!");
+        Debug.Log("HOTBAR KEMBALI!");
+        Debug.Log("PLAYER BISA BERGERAK!");
     }
+
+    // ==============================
+    // KONFIRMASI PUZZLE
+    // ==============================
 
     public void ConfirmPuzzle()
     {
@@ -100,6 +137,7 @@ public class PuzzleManager : MonoBehaviour
             return;
         }
 
+        // Periksa susunan angka
         for (int i = 0; i < tiles.Length; i++)
         {
             int expectedNumber = (i == 8) ? 0 : i + 1;
@@ -111,16 +149,19 @@ public class PuzzleManager : MonoBehaviour
 
                 Debug.Log("KODE SALAH!");
 
+                // Puzzle tetap terbuka
                 return;
             }
         }
 
+        // Puzzle berhasil
         puzzleSolved = true;
 
         HideNotification();
 
         Debug.Log("PUZZLE BERHASIL DIKONFIRMASI!");
 
+        // Buka kunci pintu
         if (doorInteraction != null)
         {
             doorInteraction.UnlockDoor();
@@ -132,33 +173,52 @@ public class PuzzleManager : MonoBehaviour
             );
 
             puzzleSolved = false;
-
             return;
         }
 
+        // Tutup puzzle dan kembalikan kontrol
         ClosePuzzle();
 
         Debug.Log("PINTU BERHASIL DIBUKA!");
     }
 
-    // Menutup puzzle dan mengembalikan UI
+    // ==============================
+    // MENUTUP PUZZLE
+    // ==============================
+
     void ClosePuzzle()
     {
         if (puzzlePanel != null)
             puzzlePanel.SetActive(false);
 
-        if (hotbarPanel != null)
-            hotbarPanel.SetActive(true);
+        RestorePlayerControl();
 
-        if (playerMovement != null)
-            playerMovement.ResumeMovement();
-
+        // Reset interaksi keypad
         KeypadInteraction keypad =
             FindFirstObjectByType<KeypadInteraction>();
 
         if (keypad != null)
             keypad.ResetInteraction();
     }
+
+    // ==============================
+    // MENGEMBALIKAN KONTROL PLAYER
+    // ==============================
+
+    void RestorePlayerControl()
+    {
+        // Tampilkan kembali Hotbar
+        if (hotbarPanel != null)
+            hotbarPanel.SetActive(true);
+
+        // Aktifkan kembali pergerakan Player
+        if (playerMovement != null)
+            playerMovement.ResumeMovement();
+    }
+
+    // ==============================
+    // MENGACAK PUZZLE
+    // ==============================
 
     void ShufflePuzzle()
     {
@@ -171,6 +231,7 @@ public class PuzzleManager : MonoBehaviour
             return;
         }
 
+        // Susunan awal puzzle
         for (int i = 0; i < tiles.Length; i++)
         {
             if (tiles[i] == null)
@@ -183,6 +244,7 @@ public class PuzzleManager : MonoBehaviour
 
         int emptyIndex = 8;
 
+        // Pengacakan dengan perpindahan valid
         for (int i = 0; i < 100; i++)
         {
             int row = emptyIndex / 3;
@@ -219,6 +281,10 @@ public class PuzzleManager : MonoBehaviour
             emptyIndex = swapIndex;
         }
     }
+
+    // ==============================
+    // MEMINDAHKAN TILE
+    // ==============================
 
     public void MoveTile(PuzzleTile clickedTile)
     {
@@ -257,6 +323,8 @@ public class PuzzleManager : MonoBehaviour
             Mathf.Abs(row - emptyRow) +
             Mathf.Abs(col - emptyCol);
 
+        // Hanya tile yang bersebelahan
+        // dengan kotak kosong yang bisa dipindahkan
         if (distance != 1)
             return;
 
@@ -271,6 +339,10 @@ public class PuzzleManager : MonoBehaviour
 
         HideNotification();
     }
+
+    // ==============================
+    // NOTIFIKASI
+    // ==============================
 
     void ShowNotification(string message)
     {
@@ -309,7 +381,6 @@ public class PuzzleManager : MonoBehaviour
         if (notificationCoroutine != null)
         {
             StopCoroutine(notificationCoroutine);
-
             notificationCoroutine = null;
         }
 
