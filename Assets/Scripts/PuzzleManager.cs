@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using UnityEngine.InputSystem;
 using TMPro;
@@ -9,7 +8,13 @@ public class PuzzleManager : MonoBehaviour
     [Header("Puzzle Settings")]
     public PuzzleTile[] tiles;
     public GameObject puzzlePanel;
-    public LockedDoorInteraction doorInteraction;
+    public DoorInteraction doorInteraction;
+
+    [Header("Player Settings")]
+    public PlayerMovement playerMovement;
+
+    [Header("Hotbar Settings")]
+    public GameObject hotbarPanel;
 
     [Header("Notification")]
     public TMP_Text notificationText;
@@ -35,17 +40,30 @@ public class PuzzleManager : MonoBehaviour
             return;
         }
 
+        if (puzzlePanel.activeSelf)
+            return;
+
         puzzleSolved = false;
+
         HideNotification();
+
         ShufflePuzzle();
+
         puzzlePanel.SetActive(true);
 
-        Debug.Log("PUZZLE DIBUKA!");
+        if (hotbarPanel != null)
+            hotbarPanel.SetActive(false);
+
+        if (playerMovement != null)
+            playerMovement.StopMovement();
+
+        Debug.Log("PUZZLE BERHASIL DIBUKA!");
     }
 
     void Update()
     {
-        if (puzzlePanel == null || !puzzlePanel.activeSelf)
+        if (puzzlePanel == null ||
+            !puzzlePanel.activeSelf)
             return;
 
         if (Keyboard.current == null)
@@ -61,10 +79,12 @@ public class PuzzleManager : MonoBehaviour
 
     public void CancelPuzzle()
     {
+        if (puzzleSolved)
+            return;
+
         HideNotification();
 
-        if (puzzlePanel != null)
-            puzzlePanel.SetActive(false);
+        ClosePuzzle();
 
         Debug.Log("PUZZLE DIBATALKAN!");
     }
@@ -88,12 +108,15 @@ public class PuzzleManager : MonoBehaviour
                 tiles[i].tileNumber != expectedNumber)
             {
                 ShowNotification("Kode Salah!");
+
                 Debug.Log("KODE SALAH!");
+
                 return;
             }
         }
 
         puzzleSolved = true;
+
         HideNotification();
 
         Debug.Log("PUZZLE BERHASIL DIKONFIRMASI!");
@@ -105,21 +128,46 @@ public class PuzzleManager : MonoBehaviour
         else
         {
             Debug.LogWarning(
-                "DoorInteraction belum dihubungkan pada PuzzleManager!"
+                "DoorInteraction belum dihubungkan!"
             );
+
             puzzleSolved = false;
+
             return;
         }
 
+        ClosePuzzle();
+
+        Debug.Log("PINTU BERHASIL DIBUKA!");
+    }
+
+    // Menutup puzzle dan mengembalikan UI
+    void ClosePuzzle()
+    {
         if (puzzlePanel != null)
             puzzlePanel.SetActive(false);
+
+        if (hotbarPanel != null)
+            hotbarPanel.SetActive(true);
+
+        if (playerMovement != null)
+            playerMovement.ResumeMovement();
+
+        KeypadInteraction keypad =
+            FindFirstObjectByType<KeypadInteraction>();
+
+        if (keypad != null)
+            keypad.ResetInteraction();
     }
 
     void ShufflePuzzle()
     {
         if (tiles == null || tiles.Length != 9)
         {
-            Debug.LogWarning("Isi Tiles dengan 9 objek PuzzleTile!");
+            Debug.LogWarning(
+                "Isi Tiles dengan 9 objek PuzzleTile!"
+            );
+
             return;
         }
 
@@ -129,6 +177,7 @@ public class PuzzleManager : MonoBehaviour
                 return;
 
             tiles[i].tileNumber = (i == 8) ? 0 : i + 1;
+
             tiles[i].UpdateNumber();
         }
 
@@ -142,15 +191,26 @@ public class PuzzleManager : MonoBehaviour
             int[] candidates = new int[4];
             int count = 0;
 
-            if (row > 0) candidates[count++] = emptyIndex - 3;
-            if (row < 2) candidates[count++] = emptyIndex + 3;
-            if (col > 0) candidates[count++] = emptyIndex - 1;
-            if (col < 2) candidates[count++] = emptyIndex + 1;
+            if (row > 0)
+                candidates[count++] = emptyIndex - 3;
 
-            int swapIndex = candidates[Random.Range(0, count)];
+            if (row < 2)
+                candidates[count++] = emptyIndex + 3;
+
+            if (col > 0)
+                candidates[count++] = emptyIndex - 1;
+
+            if (col < 2)
+                candidates[count++] = emptyIndex + 1;
+
+            int swapIndex =
+                candidates[Random.Range(0, count)];
 
             int temp = tiles[emptyIndex].tileNumber;
-            tiles[emptyIndex].tileNumber = tiles[swapIndex].tileNumber;
+
+            tiles[emptyIndex].tileNumber =
+                tiles[swapIndex].tileNumber;
+
             tiles[swapIndex].tileNumber = temp;
 
             tiles[emptyIndex].UpdateNumber();
@@ -165,7 +225,8 @@ public class PuzzleManager : MonoBehaviour
         if (puzzleSolved || clickedTile == null)
             return;
 
-        int clickedIndex = System.Array.IndexOf(tiles, clickedTile);
+        int clickedIndex =
+            System.Array.IndexOf(tiles, clickedTile);
 
         if (clickedIndex < 0)
             return;
@@ -174,29 +235,35 @@ public class PuzzleManager : MonoBehaviour
 
         for (int i = 0; i < tiles.Length; i++)
         {
-            if (tiles[i] != null && tiles[i].tileNumber == 0)
+            if (tiles[i] != null &&
+                tiles[i].tileNumber == 0)
             {
                 emptyIndex = i;
                 break;
             }
         }
 
-        if (emptyIndex < 0 || clickedTile.tileNumber == 0)
+        if (emptyIndex < 0 ||
+            clickedTile.tileNumber == 0)
             return;
 
         int row = clickedIndex / 3;
         int col = clickedIndex % 3;
+
         int emptyRow = emptyIndex / 3;
         int emptyCol = emptyIndex % 3;
 
-        int distance = Mathf.Abs(row - emptyRow)
-                     + Mathf.Abs(col - emptyCol);
+        int distance =
+            Mathf.Abs(row - emptyRow) +
+            Mathf.Abs(col - emptyCol);
 
         if (distance != 1)
             return;
 
         int temp = clickedTile.tileNumber;
+
         clickedTile.tileNumber = 0;
+
         tiles[emptyIndex].tileNumber = temp;
 
         clickedTile.UpdateNumber();
@@ -212,6 +279,7 @@ public class PuzzleManager : MonoBehaviour
             Debug.LogWarning(
                 "Notification Text belum dihubungkan: " + message
             );
+
             return;
         }
 
@@ -219,6 +287,7 @@ public class PuzzleManager : MonoBehaviour
             StopCoroutine(notificationCoroutine);
 
         notificationText.text = message;
+
         notificationText.gameObject.SetActive(true);
 
         notificationCoroutine =
@@ -240,6 +309,7 @@ public class PuzzleManager : MonoBehaviour
         if (notificationCoroutine != null)
         {
             StopCoroutine(notificationCoroutine);
+
             notificationCoroutine = null;
         }
 

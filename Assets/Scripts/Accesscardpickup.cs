@@ -1,75 +1,102 @@
-
 using UnityEngine;
 using UnityEngine.InputSystem;
+using TMPro;
 
 public class AccessCardPickup : MonoBehaviour
 {
+    [Header("Player")]
+    public PlayerInventory playerInventory;
+
+    [Header("UI Interaksi")]
+    public GameObject interactionPrompt;
+    public TMP_Text promptText;
+
     private bool playerNearby = false;
-    private PlayerInventory playerInventory;
+    private bool isCollected = false;
 
-    private void Update()
+    void Start()
     {
-        if (playerNearby &&
-            Keyboard.current != null &&
-            Keyboard.current.eKey.wasPressedThisFrame)
+        if (interactionPrompt != null)
+            interactionPrompt.SetActive(false);
+    }
+
+    void Update()
+    {
+        if (!playerNearby || isCollected)
+            return;
+
+        if (Keyboard.current == null)
+            return;
+
+        if (Keyboard.current.eKey.wasPressedThisFrame)
         {
-            PickUpCard();
+            CollectAccessCard();
         }
     }
 
-    private void OnTriggerEnter2D(Collider2D other)
-    {
-        if (other.CompareTag("Player"))
-        {
-            playerNearby = true;
-
-            playerInventory =
-                other.GetComponent<PlayerInventory>();
-
-            if (playerInventory == null)
-            {
-                playerInventory =
-                    other.GetComponentInParent<PlayerInventory>();
-            }
-
-            Debug.Log("Tekan E untuk mengambil Access Card");
-
-            if (playerInventory == null)
-            {
-                Debug.LogWarning(
-                    "PlayerInventory tidak ditemukan pada Player!"
-                );
-            }
-        }
-    }
-
-    private void OnTriggerExit2D(Collider2D other)
-    {
-        if (other.CompareTag("Player"))
-        {
-            playerNearby = false;
-            playerInventory = null;
-
-            Debug.Log("Player menjauh dari Access Card");
-        }
-    }
-
-    private void PickUpCard()
+    void CollectAccessCard()
     {
         if (playerInventory == null)
         {
-            Debug.LogError(
-                "Access Card gagal diambil: PlayerInventory tidak ditemukan!"
-            );
+            Debug.LogWarning("PlayerInventory belum ditemukan!");
             return;
         }
 
-        // Tambahkan kartu ke inventory pemain.
+        if (playerInventory.hasAccessCard)
+        {
+            Debug.Log("Player sudah memiliki Access Card!");
+            return;
+        }
+
+        // Masukkan kartu ke inventory
         playerInventory.AddAccessCard();
 
-        Debug.Log("Access Card berhasil diambil!");
+        isCollected = true;
 
-        // Hapus objek kartu dari scene.
-        Destroy(gameObject);
+        // Sembunyikan petunjuk
+        if (interactionPrompt != null)
+            interactionPrompt.SetActive(false);
+
+        // Hilangkan objek kartu
+        gameObject.SetActive(false);
+
+        Debug.Log("ACCESS CARD BERHASIL DIAMBIL!");
+    }
+
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        if (!other.CompareTag("Player") || isCollected)
+            return;
+
+        playerNearby = true;
+
+        playerInventory = other.GetComponent<PlayerInventory>();
+
+        if (playerInventory == null)
+            playerInventory =
+                other.GetComponentInParent<PlayerInventory>();
+
+        if (playerInventory != null &&
+            !playerInventory.hasAccessCard)
+        {
+            if (interactionPrompt != null)
+                interactionPrompt.SetActive(true);
+
+            if (promptText != null)
+                promptText.text = "Tekan E untuk mengambil Access Card";
+        }
+    }
+
+    void OnTriggerExit2D(Collider2D other)
+    {
+        if (!other.CompareTag("Player"))
+            return;
+
+        playerNearby = false;
+
+        if (interactionPrompt != null)
+            interactionPrompt.SetActive(false);
+
+        playerInventory = null;
     }
 }

@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -6,13 +5,14 @@ public class KeypadInteraction : MonoBehaviour
 {
     private bool playerNearby = false;
     private PlayerInventory playerInventory;
+    private bool isInteracting = false;
 
     [Header("Referensi Puzzle")]
     public PuzzleManager puzzleManager;
 
     private void Update()
     {
-        if (!playerNearby)
+        if (!playerNearby || isInteracting)
             return;
 
         if (Keyboard.current == null)
@@ -39,7 +39,7 @@ public class KeypadInteraction : MonoBehaviour
                 other.GetComponentInParent<PlayerInventory>();
         }
 
-        Debug.Log("Tekan E untuk berinteraksi dengan Keypad");
+        Debug.Log("Player mendekati Keypad.");
     }
 
     private void OnTriggerExit2D(Collider2D other)
@@ -49,36 +49,42 @@ public class KeypadInteraction : MonoBehaviour
 
         playerNearby = false;
         playerInventory = null;
-
-        Debug.Log("Player menjauh dari Keypad");
     }
 
     private void CheckAccessCard()
     {
         if (playerInventory == null)
         {
-            Debug.LogWarning(
-                "PlayerInventory tidak ditemukan pada Player!"
-            );
+            Debug.LogWarning("PlayerInventory tidak ditemukan!");
             return;
         }
 
+        // Periksa kartu
         if (!playerInventory.hasAccessCard)
         {
-            Debug.Log("Access Card diperlukan untuk menggunakan Keypad!");
+            Debug.Log("ACCESS DENIED! ACCESS CARD DIPERLUKAN.");
             return;
         }
 
         if (puzzleManager == null)
         {
-            Debug.LogError(
-                "PuzzleManager belum dihubungkan pada Keypad!"
-            );
+            Debug.LogError("PuzzleManager belum dihubungkan!");
             return;
         }
 
-        Debug.Log("Access Card terdeteksi. Membuka panel puzzle.");
+        // Langsung buka puzzle setelah kartu terdeteksi
+        isInteracting = true;
+
+        Debug.Log("ACCESS CARD BERHASIL DIVERIFIKASI!");
+
+        Debug.Log("MEMBUKA PUZZLE!");
 
         puzzleManager.OpenPuzzle();
+    }
+
+    // Dipanggil ketika puzzle ditutup
+    public void ResetInteraction()
+    {
+        isInteracting = false;
     }
 }

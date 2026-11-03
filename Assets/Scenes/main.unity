@@ -2921,6 +2921,7 @@ MonoBehaviour:
   lorongSpawnPoint: {fileID: 1701323148}
   screenFadeController: {fileID: 1841413191}
   isLocked: 1
+  hasScannedCard: 0
 --- !u!61 &725054170
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -4400,6 +4401,8 @@ MonoBehaviour:
   - {fileID: 153780872}
   puzzlePanel: {fileID: 469144041}
   doorInteraction: {fileID: 725054169}
+  playerMovement: {fileID: 0}
+  hotbarPanel: {fileID: 0}
   notificationText: {fileID: 1370955943}
   notificationDuration: 2
 --- !u!1 &1151892042
@@ -6731,6 +6734,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8007549acc26d9643b377a0f731b1217, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AccessCardPickup
+  playerInventory: {fileID: 0}
+  interactionPrompt: {fileID: 0}
+  promptText: {fileID: 0}
 --- !u!61 &1826171387
 BoxCollider2D:
   m_ObjectHideFlags: 0

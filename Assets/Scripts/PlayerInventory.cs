@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -34,21 +33,16 @@ public class PlayerInventory : MonoBehaviour
     {
         if (slot1Icon == null)
         {
-            Debug.LogWarning(
-                "Slot_1 belum dihubungkan ke PlayerInventory."
-            );
+            Debug.LogWarning("Slot_1 belum dihubungkan!");
             return;
         }
 
-        // Image Slot 1 tetap aktif, baik kosong maupun terisi.
         slot1Icon.enabled = true;
 
-        // Bedakan tampilan slot kosong dan slot berisi kartu.
         slot1Icon.color = hasAccessCard
             ? accessCardColor
             : emptySlotColor;
 
-        // Prototipe masih berupa kotak, tanpa gambar kartu.
         slot1Icon.sprite = null;
     }
 }

@@ -1,6 +1,6 @@
-
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections;
 
 public class DoorInteraction : MonoBehaviour
 {
@@ -16,6 +16,9 @@ public class DoorInteraction : MonoBehaviour
 
     [Header("Status Pintu")]
     public bool isLocked = true;
+
+    [Header("Status Access Card")]
+    public bool hasScannedCard = false;
 
     private bool playerNearby = false;
     private bool isTeleporting = false;
@@ -40,33 +43,51 @@ public class DoorInteraction : MonoBehaviour
 
     void ToggleDoor()
     {
+        // Jika pintu masih terkunci
         if (isLocked)
         {
+            // Periksa apakah kartu sudah di-scan
+            if (!hasScannedCard)
+            {
+                Debug.Log(
+                    "AKSES DITOLAK! SILAKAN SCAN ACCESS CARD."
+                );
+
+                return;
+            }
+
+            // Buka puzzle PIN
             if (puzzleManager != null)
             {
                 puzzleManager.OpenPuzzle();
             }
-            else if (puzzlePanel != null)
-            {
-                puzzlePanel.SetActive(true);
-            }
             else
             {
                 Debug.LogWarning(
-                    "PuzzleManager dan PuzzlePanel belum dihubungkan!"
+                    "PuzzleManager belum dihubungkan!"
                 );
             }
 
             return;
         }
 
-        // Pintu sudah terbuka: pindahkan pemain ke lorong.
+        // Jika pintu sudah terbuka, masuk ke lorong
         TeleportToCorridor();
     }
 
+    // Dipanggil oleh AccessCardScanner
+    public void GrantAccess()
+    {
+        hasScannedCard = true;
+
+        Debug.Log("AKSES PINTU DIBERIKAN!");
+    }
+
+    // Dipanggil oleh PuzzleManager
     public void UnlockDoor()
     {
         isLocked = false;
+
         Debug.Log("KUNCI PINTU BERHASIL DIBUKA!");
     }
 
@@ -80,6 +101,7 @@ public class DoorInteraction : MonoBehaviour
                 "Referensi Player, LorongSpawnPoint, atau " +
                 "ScreenFadeController belum lengkap!"
             );
+
             return;
         }
 
@@ -90,11 +112,10 @@ public class DoorInteraction : MonoBehaviour
             lorongSpawnPoint
         );
 
-        // Izinkan interaksi kembali setelah proses fade selesai.
         StartCoroutine(ResetTeleportState());
     }
 
-    System.Collections.IEnumerator ResetTeleportState()
+    IEnumerator ResetTeleportState()
     {
         yield return new WaitForSeconds(
             screenFadeController.fadeDuration * 2f + 0.2f
@@ -108,6 +129,7 @@ public class DoorInteraction : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             playerNearby = true;
+
             Debug.Log("Tekan E untuk berinteraksi dengan pintu.");
         }
     }
