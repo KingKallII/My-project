@@ -9,7 +9,7 @@ public class PuzzleManager : MonoBehaviour
     [Header("Puzzle Settings")]
     public PuzzleTile[] tiles;
     public GameObject puzzlePanel;
-    public DoorInteraction doorInteraction;
+    public LockedDoorInteraction doorInteraction;
 
     [Header("Notification")]
     public TMP_Text notificationText;
