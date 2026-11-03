@@ -1,6 +1,7 @@
 
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections.Generic;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -49,6 +50,9 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 movement;
     private bool canMove = true;
 
+    // Menyimpan urutan tombol yang sedang ditekan
+    private List<Key> pressedKeys = new List<Key>();
+
     private enum FacingDirection
     {
         Front,
@@ -79,50 +83,136 @@ public class PlayerMovement : MonoBehaviour
             return;
         }
 
+        if (Keyboard.current == null)
+        {
+            movement = Vector2.zero;
+            pressedKeys.Clear();
+            return;
+        }
+
+        // =====================================
+        // DETEKSI TOMBOL BARU DITEKAN
+        // =====================================
+
+        if (Keyboard.current.wKey.wasPressedThisFrame)
+            RegisterKeyPress(Key.W);
+
+        if (Keyboard.current.upArrowKey.wasPressedThisFrame)
+            RegisterKeyPress(Key.UpArrow);
+
+        if (Keyboard.current.sKey.wasPressedThisFrame)
+            RegisterKeyPress(Key.S);
+
+        if (Keyboard.current.downArrowKey.wasPressedThisFrame)
+            RegisterKeyPress(Key.DownArrow);
+
+        if (Keyboard.current.aKey.wasPressedThisFrame)
+            RegisterKeyPress(Key.A);
+
+        if (Keyboard.current.leftArrowKey.wasPressedThisFrame)
+            RegisterKeyPress(Key.LeftArrow);
+
+        if (Keyboard.current.dKey.wasPressedThisFrame)
+            RegisterKeyPress(Key.D);
+
+        if (Keyboard.current.rightArrowKey.wasPressedThisFrame)
+            RegisterKeyPress(Key.RightArrow);
+
+
+        // =====================================
+        // DETEKSI TOMBOL DILEPASKAN
+        // =====================================
+
+        if (Keyboard.current.wKey.wasReleasedThisFrame)
+            RegisterKeyRelease(Key.W);
+
+        if (Keyboard.current.upArrowKey.wasReleasedThisFrame)
+            RegisterKeyRelease(Key.UpArrow);
+
+        if (Keyboard.current.sKey.wasReleasedThisFrame)
+            RegisterKeyRelease(Key.S);
+
+        if (Keyboard.current.downArrowKey.wasReleasedThisFrame)
+            RegisterKeyRelease(Key.DownArrow);
+
+        if (Keyboard.current.aKey.wasReleasedThisFrame)
+            RegisterKeyRelease(Key.A);
+
+        if (Keyboard.current.leftArrowKey.wasReleasedThisFrame)
+            RegisterKeyRelease(Key.LeftArrow);
+
+        if (Keyboard.current.dKey.wasReleasedThisFrame)
+            RegisterKeyRelease(Key.D);
+
+        if (Keyboard.current.rightArrowKey.wasReleasedThisFrame)
+            RegisterKeyRelease(Key.RightArrow);
+
+
+        // =====================================
+        // BERSIHKAN INPUT YANG SUDAH DILEPAS
+        // =====================================
+
+        pressedKeys.RemoveAll(
+            key => !Keyboard.current[key].isPressed
+        );
+
+
+        // =====================================
+        // AMBIL TOMBOL TERAKHIR YANG MASIH AKTIF
+        // =====================================
+
         movement = Vector2.zero;
 
-        if (Keyboard.current == null)
-            return;
-
-        if (Keyboard.current.wKey.isPressed ||
-            Keyboard.current.upArrowKey.isPressed)
+        if (pressedKeys.Count > 0)
         {
-            movement.y += 1;
+            Key activeKey = pressedKeys[pressedKeys.Count - 1];
+
+            switch (activeKey)
+            {
+                case Key.W:
+                case Key.UpArrow:
+                    movement = Vector2.up;
+                    break;
+
+                case Key.S:
+                case Key.DownArrow:
+                    movement = Vector2.down;
+                    break;
+
+                case Key.A:
+                case Key.LeftArrow:
+                    movement = Vector2.left;
+                    break;
+
+                case Key.D:
+                case Key.RightArrow:
+                    movement = Vector2.right;
+                    break;
+            }
         }
 
-        if (Keyboard.current.sKey.isPressed ||
-            Keyboard.current.downArrowKey.isPressed)
-        {
-            movement.y -= 1;
-        }
 
-        if (Keyboard.current.aKey.isPressed ||
-            Keyboard.current.leftArrowKey.isPressed)
-        {
-            movement.x -= 1;
-        }
-
-        if (Keyboard.current.dKey.isPressed ||
-            Keyboard.current.rightArrowKey.isPressed)
-        {
-            movement.x += 1;
-        }
-
-        movement = movement.normalized;
+        // =====================================
+        // UPDATE ARAH DAN ANIMASI
+        // =====================================
 
         if (movement != Vector2.zero)
         {
-            if (Mathf.Abs(movement.x) > Mathf.Abs(movement.y))
+            if (movement.x < 0)
             {
-                lastDirection = movement.x < 0
-                    ? FacingDirection.Left
-                    : FacingDirection.Right;
+                lastDirection = FacingDirection.Left;
             }
-            else
+            else if (movement.x > 0)
             {
-                lastDirection = movement.y > 0
-                    ? FacingDirection.Back
-                    : FacingDirection.Front;
+                lastDirection = FacingDirection.Right;
+            }
+            else if (movement.y > 0)
+            {
+                lastDirection = FacingDirection.Back;
+            }
+            else if (movement.y < 0)
+            {
+                lastDirection = FacingDirection.Front;
             }
 
             UpdateWalkingSprite();
@@ -133,6 +223,30 @@ public class PlayerMovement : MonoBehaviour
             SetIdleSprite();
         }
     }
+
+
+    // =====================================
+    // REGISTER TOMBOL
+    // =====================================
+
+    void RegisterKeyPress(Key key)
+    {
+        // Hapus jika sudah ada agar tidak duplikat
+        pressedKeys.Remove(key);
+
+        // Masukkan sebagai tombol terbaru
+        pressedKeys.Add(key);
+    }
+
+    void RegisterKeyRelease(Key key)
+    {
+        pressedKeys.Remove(key);
+    }
+
+
+    // =====================================
+    // PERGERAKAN PLAYER
+    // =====================================
 
     void FixedUpdate()
     {
@@ -148,6 +262,11 @@ public class PlayerMovement : MonoBehaviour
         rb.linearVelocity = movement * moveSpeed;
     }
 
+
+    // =====================================
+    // UPDATE SPRITE BERJALAN
+    // =====================================
+
     void UpdateWalkingSprite()
     {
         if (spriteRenderer == null)
@@ -161,7 +280,7 @@ public class PlayerMovement : MonoBehaviour
 
         switch (lastDirection)
         {
-            // W: berjalan membelakangi kamera.
+            // W: berjalan membelakangi kamera
             case FacingDirection.Back:
                 frame1 = walkingAwayFrame1;
                 frame2 = walkingAwayFrame2;
@@ -171,7 +290,7 @@ public class PlayerMovement : MonoBehaviour
                     : walkingBackSprite;
                 break;
 
-            // S: berjalan menghadap kamera.
+            // S: berjalan menghadap kamera
             case FacingDirection.Front:
                 frame1 = walkingFrontFrame1;
                 frame2 = walkingFrontFrame2;
@@ -181,7 +300,7 @@ public class PlayerMovement : MonoBehaviour
                     : idleSprite;
                 break;
 
-            // A: berjalan ke kiri.
+            // A: berjalan ke kiri
             case FacingDirection.Left:
                 frame1 = walkingLeftFrame1;
                 frame2 = walkingLeftFrame2;
@@ -193,7 +312,7 @@ public class PlayerMovement : MonoBehaviour
                         : profileHoodieSprite);
                 break;
 
-            // D: berjalan ke kanan.
+            // D: berjalan ke kanan
             case FacingDirection.Right:
                 frame1 = walkingRightFrame1;
                 frame2 = walkingRightFrame2;
@@ -218,6 +337,11 @@ public class PlayerMovement : MonoBehaviour
                 spriteRenderer.sprite = fallbackSprite;
         }
     }
+
+
+    // =====================================
+    // ANIMASI BERJALAN
+    // =====================================
 
     void AnimateFrames(Sprite frame1, Sprite frame2)
     {
@@ -247,12 +371,22 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+
+    // =====================================
+    // RESET ANIMASI
+    // =====================================
+
     void ResetAnimation()
     {
         walkAnimationTimer = 0f;
         currentWalkFrame = 0;
         animatedDirection = null;
     }
+
+
+    // =====================================
+    // IDLE SPRITE SETIAP ARAH
+    // =====================================
 
     void SetIdleSprite()
     {
@@ -280,7 +414,6 @@ public class PlayerMovement : MonoBehaviour
                 break;
 
             case FacingDirection.Left:
-                // Prioritaskan sprite idle kiri.
                 spriteRenderer.flipX = false;
 
                 spriteRenderer.sprite = idleLeftSprite != null
@@ -291,7 +424,6 @@ public class PlayerMovement : MonoBehaviour
                 break;
 
             case FacingDirection.Right:
-                // Pertahankan perilaku idle kanan.
                 spriteRenderer.flipX = false;
 
                 spriteRenderer.sprite = idleRightSprite != null
@@ -303,10 +435,17 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+
+    // =====================================
+    // STOP MOVEMENT
+    // =====================================
+
     public void StopMovement()
     {
         canMove = false;
         movement = Vector2.zero;
+
+        pressedKeys.Clear();
 
         if (rb != null)
             rb.linearVelocity = Vector2.zero;
@@ -314,6 +453,11 @@ public class PlayerMovement : MonoBehaviour
         ResetAnimation();
         SetIdleSprite();
     }
+
+
+    // =====================================
+    // RESUME MOVEMENT
+    // =====================================
 
     public void ResumeMovement()
     {
