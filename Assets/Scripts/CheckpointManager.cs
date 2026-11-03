@@ -1,20 +1,46 @@
+
 using UnityEngine;
 
 public class CheckpointManager : MonoBehaviour
 {
     public static CheckpointManager Instance;
 
+    [Header("Checkpoint Awal Basement")]
+    public Transform basementStartPoint;
+
     private Vector3 checkpointPosition;
     private bool hasCheckpoint = false;
 
     void Awake()
     {
-        Instance = this;
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     void Start()
     {
-        checkpointPosition = transform.position;
+        if (basementStartPoint != null)
+        {
+            checkpointPosition = basementStartPoint.position;
+            hasCheckpoint = true;
+
+            Debug.Log(
+                "BASEMENT START POINT TERHUBUNG: "
+                + checkpointPosition
+            );
+        }
+        else
+        {
+            Debug.LogError(
+                "Basement Start Point belum dihubungkan!"
+            );
+        }
     }
 
     public void SetCheckpoint(Vector3 position)
@@ -23,7 +49,8 @@ public class CheckpointManager : MonoBehaviour
         hasCheckpoint = true;
 
         Debug.Log(
-            "CHECKPOINT TERSIMPAN! Posisi: " + checkpointPosition
+            "CHECKPOINT TERSIMPAN! Posisi: "
+            + checkpointPosition
         );
     }
 
@@ -35,24 +62,23 @@ public class CheckpointManager : MonoBehaviour
             return;
         }
 
+        if (player == null)
+            return;
+
         Rigidbody2D playerRb =
             player.GetComponent<Rigidbody2D>();
 
         if (playerRb != null)
         {
-            // Hentikan gerakan Player
             playerRb.linearVelocity = Vector2.zero;
-
-            // Teleport menggunakan Rigidbody2D
-            playerRb.position =
-                new Vector2(
-                    checkpointPosition.x,
-                    checkpointPosition.y
-                );
+            playerRb.angularVelocity = 0f;
+            playerRb.position = new Vector2(
+                checkpointPosition.x,
+                checkpointPosition.y
+            );
         }
         else
         {
-            // Cadangan kalau Rigidbody2D tidak ditemukan
             player.transform.position = checkpointPosition;
         }
 
