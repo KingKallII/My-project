@@ -4401,8 +4401,8 @@ MonoBehaviour:
   - {fileID: 153780872}
   puzzlePanel: {fileID: 469144041}
   doorInteraction: {fileID: 725054169}
-  playerMovement: {fileID: 0}
-  hotbarPanel: {fileID: 0}
+  playerMovement: {fileID: 1007078831}
+  hotbarPanel: {fileID: 1661482052}
   notificationText: {fileID: 1370955943}
   notificationDuration: 2
 --- !u!1 &1151892042
@@ -8848,7 +8848,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 1
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
+  m_Sprite: {fileID: -8409425060614979124, guid: c30631461f23fa442bb0d32e3fca1ff2, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -8925,7 +8925,7 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1, y: 1}
+    oldSize: {x: 0.92, y: 1.05}
     newSize: {x: 1, y: 1}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
