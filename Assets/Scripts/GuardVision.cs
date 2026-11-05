@@ -95,14 +95,20 @@ public class GuardVision : MonoBehaviour
         }
     }
 
-    void UpdateMovementDirection()
+   void UpdateMovementDirection()
+{
+    // Ambil arah hadap dari GuardPatrol.
+    if (guardPatrol != null)
     {
-        // Ambil arah hadap dari GuardPatrol.
-        if (guardPatrol != null)
-        {
-            currentDirection = guardPatrol.GetFacingDirection();
-        }
+        currentDirection = guardPatrol.GetFacingDirection();
+
+        Debug.Log("ARAH GUARD: " + currentDirection);
     }
+    else
+    {
+        Debug.LogWarning("GuardPatrol belum terhubung!");
+    }
+}
 
     void UpdateConeDirection()
     {

@@ -31,11 +31,11 @@ public class VisionCone : MonoBehaviour
         mesh.name = "Vision Cone Mesh";
         meshFilter.sharedMesh = mesh;
 
-        // Tampilkan mesh di depan lantai, tetapi di belakang sprite guard.
+        // Pengaturan tampilan cone.
         meshRenderer.sortingLayerName = "Default";
         meshRenderer.sortingOrder = sortingOrder;
 
-        // Aktifkan render dua sisi agar mesh tidak hilang akibat arah normal.
+        // Render mesh dari dua sisi.
         meshRenderer.material.SetInt(
             "_Cull",
             (int)CullMode.Off
@@ -50,8 +50,11 @@ public class VisionCone : MonoBehaviour
         float distance,
         float angle)
     {
+        // Gunakan arah World Space secara langsung.
         if (direction.sqrMagnitude > 0.0001f)
+        {
             currentDirection = direction.normalized;
+        }
 
         viewDistance = distance;
         viewAngle = angle;
@@ -94,7 +97,6 @@ public class VisionCone : MonoBehaviour
             int index = i * 3;
 
             triangles[index] = 0;
-            // Urutan dibalik untuk menghadap kamera 2D.
             triangles[index + 1] = i + 2;
             triangles[index + 2] = i + 1;
         }
@@ -109,18 +111,24 @@ public class VisionCone : MonoBehaviour
     public void SetNormal()
     {
         if (meshRenderer != null)
+        {
             meshRenderer.material.color = normalColor;
+        }
     }
 
     public void SetDetected()
     {
         if (meshRenderer != null)
+        {
             meshRenderer.material.color = detectedColor;
+        }
     }
 
     void OnDestroy()
     {
         if (mesh != null)
+        {
             Destroy(mesh);
+        }
     }
 }
