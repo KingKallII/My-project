@@ -7,6 +7,7 @@ public class GuardPatrol : MonoBehaviour
     public Transform pointA;
     public Transform pointB;
     public Transform pointC;
+    public Transform pointD;
 
     [Header("Kecepatan")]
     public float moveSpeed = 2f;
@@ -89,16 +90,17 @@ public class GuardPatrol : MonoBehaviour
         if (playerObject != null)
             player = playerObject.transform;
 
-        // Urutan patroli: C -> B -> A -> B -> C
+        // Urutan patroli: A -> B -> C -> D
         patrolPoints = new Transform[]
         {
-            pointC,
-            pointB,
             pointA,
-            pointB
+            pointB,
+            pointC,
+            pointD
         };
 
         currentPointIndex = 0;
+
         SetIdleSprite();
     }
 
@@ -273,6 +275,7 @@ public class GuardPatrol : MonoBehaviour
             case FacingDirection.Back:
                 frame1 = walkingAwayFrame1;
                 frame2 = walkingAwayFrame2;
+
                 fallbackSprite = walkingAwaySprite != null
                     ? walkingAwaySprite
                     : (walkingBackSprite != null
@@ -283,6 +286,7 @@ public class GuardPatrol : MonoBehaviour
             case FacingDirection.Front:
                 frame1 = walkingFrontFrame1;
                 frame2 = walkingFrontFrame2;
+
                 fallbackSprite = topDownWalkingSprite != null
                     ? topDownWalkingSprite
                     : idleSprite;
@@ -291,6 +295,7 @@ public class GuardPatrol : MonoBehaviour
             case FacingDirection.Left:
                 frame1 = walkingLeftFrame1;
                 frame2 = walkingLeftFrame2;
+
                 fallbackSprite = walkingProfile2 != null
                     ? walkingProfile2
                     : (sideViewSprite != null
@@ -301,6 +306,7 @@ public class GuardPatrol : MonoBehaviour
             case FacingDirection.Right:
                 frame1 = walkingRightFrame1;
                 frame2 = walkingRightFrame2;
+
                 fallbackSprite = walkingProfile1 != null
                     ? walkingProfile1
                     : (sideViewSprite != null
@@ -429,26 +435,47 @@ public class GuardPatrol : MonoBehaviour
     {
         isCaught = false;
         isChasing = false;
+
+        // Mulai kembali dari titik A.
         currentPointIndex = 0;
 
         if (rb != null)
         {
-            rb.position = pointC != null
-                ? (Vector2)pointC.position
+            rb.position = pointA != null
+                ? (Vector2)pointA.position
                 : rb.position;
 
             rb.linearVelocity = Vector2.zero;
         }
 
-        if (pointC != null)
-            transform.position = pointC.position;
+        if (pointA != null)
+            transform.position = pointA.position;
 
         ResetAnimation();
         SetIdleSprite();
 
-        Debug.Log("GUARD KEMBALI PATROLI!");
+        Debug.Log("GUARD KEMBALI PATROLI DARI TITIK A!");
     }
+public Vector2 GetFacingDirection()
+{
+    switch (lastDirection)
+    {
+        case FacingDirection.Front:
+            return Vector2.down;
 
+        case FacingDirection.Back:
+            return Vector2.up;
+
+        case FacingDirection.Left:
+            return Vector2.left;
+
+        case FacingDirection.Right:
+            return Vector2.right;
+
+        default:
+            return Vector2.down;
+    }
+}
     public bool IsChasing()
     {
         return isChasing;
