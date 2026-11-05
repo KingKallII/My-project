@@ -23,7 +23,7 @@ public class GuardVision : MonoBehaviour
 
     private Transform player;
     private Vector2 currentDirection;
-    private Vector2 previousPosition;
+    private GuardPatrol guardPatrol;
 
     void Start()
     {
@@ -39,6 +39,16 @@ public class GuardVision : MonoBehaviour
         {
             Debug.LogWarning(
                 "GuardVision: Player dengan Tag 'Player' tidak ditemukan!"
+            );
+        }
+
+        // Ambil komponen GuardPatrol.
+        guardPatrol = GetComponent<GuardPatrol>();
+
+        if (guardPatrol == null)
+        {
+            Debug.LogWarning(
+                "GuardVision: Komponen GuardPatrol tidak ditemukan!"
             );
         }
 
@@ -64,8 +74,6 @@ public class GuardVision : MonoBehaviour
             currentDirection = Vector2.down;
         }
 
-        previousPosition = transform.position;
-
         UpdateConeDirection();
     }
 
@@ -89,18 +97,11 @@ public class GuardVision : MonoBehaviour
 
     void UpdateMovementDirection()
     {
-        Vector2 currentPosition = transform.position;
-
-        Vector2 movement =
-            currentPosition - previousPosition;
-
-        // Arah cone mengikuti gerak aktual guard.
-        if (movement.magnitude > directionThreshold)
+        // Ambil arah hadap dari GuardPatrol.
+        if (guardPatrol != null)
         {
-            currentDirection = movement.normalized;
+            currentDirection = guardPatrol.GetFacingDirection();
         }
-
-        previousPosition = currentPosition;
     }
 
     void UpdateConeDirection()
@@ -108,7 +109,7 @@ public class GuardVision : MonoBehaviour
         if (visionCone == null)
             return;
 
-        // Kirim nilai terbaru ke bentuk visual cone.
+        // Kirim arah terbaru ke bentuk visual cone.
         visionCone.SetDirection(
             currentDirection,
             viewDistance,
