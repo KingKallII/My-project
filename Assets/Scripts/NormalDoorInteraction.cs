@@ -13,17 +13,17 @@ public class NormalDoorInteraction : MonoBehaviour
 
     void Update()
     {
-        if (isOpened || !playerNearby)
+        if (!playerNearby)
             return;
 
         if (Keyboard.current != null &&
             Keyboard.current.eKey.wasPressedThisFrame)
         {
-            OpenDoor();
+            ToggleDoor();
         }
     }
 
-    void OpenDoor()
+    void ToggleDoor()
     {
         if (doorVisual == null || doorBarrier == null)
         {
@@ -33,23 +33,31 @@ public class NormalDoorInteraction : MonoBehaviour
             return;
         }
 
-        isOpened = true;
+        // Ubah status pintu
+        isOpened = !isOpened;
 
-        // Hilangkan gambar pintu.
+        // Atur visual pintu
         SpriteRenderer sprite =
             doorVisual.GetComponent<SpriteRenderer>();
 
         if (sprite != null)
-            sprite.enabled = false;
+            sprite.enabled = !isOpened;
 
-        // Hilangkan penghalang fisik pintu.
+        // Atur penghalang fisik pintu
         Collider2D barrierCollider =
             doorBarrier.GetComponent<Collider2D>();
 
         if (barrierCollider != null)
-            barrierCollider.enabled = false;
+            barrierCollider.enabled = !isOpened;
 
-        Debug.Log("Pintu terbuka! Player bisa masuk.");
+        if (isOpened)
+        {
+            Debug.Log("Pintu terbuka! Player bisa masuk.");
+        }
+        else
+        {
+            Debug.Log("Pintu tertutup!");
+        }
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -57,7 +65,7 @@ public class NormalDoorInteraction : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             playerNearby = true;
-            Debug.Log("Tekan E untuk membuka pintu.");
+            Debug.Log("Tekan E untuk membuka/menutup pintu.");
         }
     }
 
