@@ -20,6 +20,9 @@ public class SafePinManager : MonoBehaviour
     [Header("Referensi Brankas")]
     public SafeInteraction safeInteraction;
 
+    [Header("Player Movement")]
+    public PlayerMovement playerMovement;
+
     private string enteredPIN = "";
     private bool isProcessing = false;
 
@@ -48,6 +51,18 @@ public class SafePinManager : MonoBehaviour
         }
     }
 
+    private void LockPlayer()
+    {
+        if (playerMovement != null)
+            playerMovement.StopMovement();
+    }
+
+    private void UnlockPlayer()
+    {
+        if (playerMovement != null)
+            playerMovement.ResumeMovement();
+    }
+
     public void OpenPinPanel()
     {
         if (pinPanel == null || isProcessing)
@@ -63,6 +78,9 @@ public class SafePinManager : MonoBehaviour
             accessFailed.SetActive(false);
 
         pinPanel.SetActive(true);
+
+        // Hentikan gerakan pemain
+        LockPlayer();
 
         Debug.Log("KEYPAD BRANKAS DIBUKA!");
     }
@@ -141,6 +159,9 @@ public class SafePinManager : MonoBehaviour
         enteredPIN = "";
         UpdateDisplay();
 
+        // Aktifkan kembali gerakan pemain
+        UnlockPlayer();
+
         isProcessing = false;
     }
 
@@ -164,6 +185,7 @@ public class SafePinManager : MonoBehaviour
         enteredPIN = "";
         UpdateDisplay();
 
+        // Tetap terkunci karena keypad masih terbuka
         isProcessing = false;
     }
 
@@ -177,13 +199,16 @@ public class SafePinManager : MonoBehaviour
 
         if (pinPanel != null)
             pinPanel.SetActive(false);
+
+        // Aktifkan kembali gerakan pemain
+        UnlockPlayer();
     }
 
     void UpdateDisplay()
     {
         if (pinDisplay != null)
         {
-            pinDisplay.text = enteredPIN.PadRight(3, '_');
+            pinDisplay.text = enteredPIN.PadRight(3, '*');
         }
     }
 }

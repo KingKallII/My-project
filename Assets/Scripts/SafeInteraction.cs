@@ -7,13 +7,16 @@ public class SafeInteraction : MonoBehaviour
     [Header("Referensi Brankas")]
     public Collider2D safeBarrier;
 
-    [Header("Visual Brankas (Opsional)")]
+    [Header("Visual Brankas")]
     public GameObject safeClosedVisual;
     public GameObject safeOpenVisual;
 
     [Header("Referensi UI PIN")]
     public GameObject safePinPanel;
     public SafePinManager safePinManager;
+
+    [Header("Referensi Exit Key")]
+    public GameObject exitKeyItem;
 
     private bool playerNearby = false;
     private bool isUnlocked = false;
@@ -32,6 +35,10 @@ public class SafeInteraction : MonoBehaviour
 
         if (safeClosedVisual != null)
             safeClosedVisual.SetActive(true);
+
+        // Exit Key belum muncul sebelum brankas dibuka
+        if (exitKeyItem != null)
+            exitKeyItem.SetActive(false);
     }
 
     void Update()
@@ -73,19 +80,24 @@ public class SafeInteraction : MonoBehaviour
         if (safeBarrier != null)
             safeBarrier.enabled = false;
 
-        // Ganti visual jika sprite terbuka tersedia
+        // Ganti visual brankas
         if (safeClosedVisual != null)
             safeClosedVisual.SetActive(false);
 
         if (safeOpenVisual != null)
             safeOpenVisual.SetActive(true);
 
+        // Munculkan Exit Key
+        if (exitKeyItem != null)
+            exitKeyItem.SetActive(true);
+
         Debug.Log("BRANKAS BERHASIL DIBUKA!");
+        Debug.Log("EXIT KEY MUNCUL!");
     }
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Player"))
+        if (IsPlayer(other))
         {
             playerNearby = true;
 
@@ -96,9 +108,17 @@ public class SafeInteraction : MonoBehaviour
 
     void OnTriggerExit2D(Collider2D other)
     {
-        if (other.CompareTag("Player"))
+        if (IsPlayer(other))
         {
             playerNearby = false;
         }
+    }
+
+    private bool IsPlayer(Collider2D other)
+    {
+        return other.CompareTag("Player") ||
+               other.transform.root.CompareTag("Player") ||
+               (other.attachedRigidbody != null &&
+                other.attachedRigidbody.CompareTag("Player"));
     }
 }
