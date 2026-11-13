@@ -7,6 +7,12 @@ public class AccessCardPickup : MonoBehaviour
     [Header("Player")]
     public PlayerInventory playerInventory;
 
+    [Header("Tampilan Khusus di Hotbar")]
+    [Tooltip("Masukkan sprite kartu baru untuk hotbar. Jika kosong, otomatis memakai Access Card Sprite di PlayerInventory.")]
+    public Sprite hotbarIcon;
+    public bool gunakanUkuranKhusus = true;
+    public Vector2 ukuranDiHotbar = new Vector2(140f, 85f);
+
     [Header("UI Interaksi")]
     public GameObject interactionPrompt;
     public TMP_Text promptText;
@@ -42,22 +48,25 @@ public class AccessCardPickup : MonoBehaviour
             return;
         }
 
-        if (playerInventory.hasAccessCard)
+        if (playerInventory.HasAccessCard)
         {
             Debug.Log("Player sudah memiliki Access Card!");
             return;
         }
 
-        // Masukkan kartu ke inventory
-        playerInventory.AddAccessCard();
+        Sprite iconToUse = hotbarIcon != null ? hotbarIcon : playerInventory.accessCardSprite;
+        Vector2? sizeToUse = gunakanUkuranKhusus ? ukuranDiHotbar : (Vector2?)null;
+
+        bool success = playerInventory.AddAccessCard(iconToUse, sizeToUse);
+
+        if (!success)
+            return;
 
         isCollected = true;
 
-        // Sembunyikan petunjuk
         if (interactionPrompt != null)
             interactionPrompt.SetActive(false);
 
-        // Hilangkan objek kartu
         gameObject.SetActive(false);
 
         Debug.Log("ACCESS CARD BERHASIL DIAMBIL!");
@@ -71,13 +80,10 @@ public class AccessCardPickup : MonoBehaviour
         playerNearby = true;
 
         playerInventory = other.GetComponent<PlayerInventory>();
-
         if (playerInventory == null)
-            playerInventory =
-                other.GetComponentInParent<PlayerInventory>();
+            playerInventory = other.GetComponentInParent<PlayerInventory>();
 
-        if (playerInventory != null &&
-            !playerInventory.hasAccessCard)
+        if (playerInventory != null && !playerInventory.HasAccessCard)
         {
             if (interactionPrompt != null)
                 interactionPrompt.SetActive(true);

@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -7,7 +6,11 @@ public class SafeItemPickup : MonoBehaviour
     [Header("Item Settings")]
     public string itemID = "exit_key";
     public string itemName = "Exit Key";
+
+    [Header("Tampilan Khusus di Hotbar")]
     public Sprite itemIcon;
+    public bool gunakanUkuranKhusus = true;
+    public Vector2 ukuranDiHotbar = new Vector2(120f, 120f);
 
     [Header("Player Inventory")]
     public PlayerInventory playerInventory;
@@ -28,16 +31,19 @@ public class SafeItemPickup : MonoBehaviour
                 return;
             }
 
+            Vector2? sizeToUse = gunakanUkuranKhusus ? ukuranDiHotbar : (Vector2?)null;
+
             bool success = playerInventory.AddItem(
                 itemID,
                 itemName,
-                itemIcon
+                itemIcon,
+                sizeToUse
             );
 
             if (success)
             {
                 gameObject.SetActive(false);
-                Debug.Log("Exit Key berhasil diambil!");
+                Debug.Log(itemName + " berhasil diambil!");
             }
         }
     }
@@ -45,7 +51,11 @@ public class SafeItemPickup : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (IsPlayer(other))
+        {
             playerNearby = true;
+            if (playerInventory == null)
+                playerInventory = other.GetComponentInParent<PlayerInventory>();
+        }
     }
 
     private void OnTriggerExit2D(Collider2D other)

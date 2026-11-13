@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -11,6 +10,10 @@ public class DocumentPickup : MonoBehaviour
     [Header("Item Images")]
     public Sprite itemIcon;
     public Sprite documentPreview;
+
+    [Header("Ukuran Khusus di Hotbar")]
+    public bool gunakanUkuranKhusus = true;
+    public Vector2 ukuranDiHotbar = new Vector2(110f, 130f);
 
     [Header("Player Inventory")]
     public PlayerInventory playerInventory;
@@ -27,23 +30,23 @@ public class DocumentPickup : MonoBehaviour
         {
             if (playerInventory == null)
             {
-                Debug.LogWarning(
-                    "PlayerInventory belum dihubungkan!"
-                );
+                Debug.LogWarning("PlayerInventory belum dihubungkan!");
                 return;
             }
+
+            Vector2? sizeToUse = gunakanUkuranKhusus ? ukuranDiHotbar : (Vector2?)null;
 
             bool success = playerInventory.AddDocumentItem(
                 itemID,
                 itemName,
                 itemIcon,
-                documentPreview
+                documentPreview,
+                sizeToUse
             );
 
             if (success)
             {
                 gameObject.SetActive(false);
-
                 Debug.Log("Dokumen berhasil diambil!");
             }
         }
@@ -52,7 +55,11 @@ public class DocumentPickup : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (IsPlayer(other))
+        {
             playerNearby = true;
+            if (playerInventory == null)
+                playerInventory = other.GetComponentInParent<PlayerInventory>();
+        }
     }
 
     private void OnTriggerExit2D(Collider2D other)

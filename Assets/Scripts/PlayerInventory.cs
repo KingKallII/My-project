@@ -1,4 +1,3 @@
-
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,17 +10,20 @@ public class InventoryItem
     public string itemName;
     public Sprite icon;
     public Sprite previewImage;
+    public Vector2 iconSize;
 
     public InventoryItem(
         string id,
         string name,
         Sprite itemIcon,
-        Sprite preview = null)
+        Sprite preview = null,
+        Vector2? customSize = null)
     {
         itemID = id;
         itemName = name;
         icon = itemIcon;
         previewImage = preview;
+        iconSize = customSize ?? new Vector2(120f, 120f);
     }
 }
 
@@ -33,8 +35,10 @@ public class PlayerInventory : MonoBehaviour
     [Header("Hotbar Slots")]
     public Image[] slotIcons;
 
-    [Header("Item Icons")]
+    [Header("Access Card Default Settings")]
     public Sprite accessCardSprite;
+    public Vector2 accessCardHotbarSize = new Vector2(140f, 85f);
+    public Vector2 defaultHotbarSize = new Vector2(120f, 120f);
 
     [Header("Document Preview UI")]
     public GameObject documentPreviewPanel;
@@ -64,7 +68,9 @@ public class PlayerInventory : MonoBehaviour
             items.Add(new InventoryItem(
                 "access_card",
                 "Access Card",
-                accessCardSprite
+                accessCardSprite,
+                null,
+                accessCardHotbarSize
             ));
         }
 
@@ -101,25 +107,27 @@ public class PlayerInventory : MonoBehaviour
             CloseDocumentPreview();
     }
 
-    public bool AddItem(string id, string itemName, Sprite icon)
+    public bool AddItem(string id, string itemName, Sprite icon, Vector2? customSize = null)
     {
-        return AddItemInternal(id, itemName, icon, null);
+        return AddItemInternal(id, itemName, icon, null, customSize);
     }
 
     public bool AddDocumentItem(
         string id,
         string itemName,
         Sprite icon,
-        Sprite preview)
+        Sprite preview,
+        Vector2? customSize = null)
     {
-        return AddItemInternal(id, itemName, icon, preview);
+        return AddItemInternal(id, itemName, icon, preview, customSize);
     }
 
     private bool AddItemInternal(
         string id,
         string itemName,
         Sprite icon,
-        Sprite preview)
+        Sprite preview,
+        Vector2? customSize = null)
     {
         if (HasItem(id))
         {
@@ -139,11 +147,18 @@ public class PlayerInventory : MonoBehaviour
             return false;
         }
 
+        Vector2 targetSize = customSize ?? defaultHotbarSize;
+        if (!customSize.HasValue && id == "access_card")
+        {
+            targetSize = accessCardHotbarSize;
+        }
+
         items.Add(new InventoryItem(
             id,
             itemName,
             icon,
-            preview
+            preview,
+            targetSize
         ));
 
         if (id == "access_card")
@@ -155,20 +170,20 @@ public class PlayerInventory : MonoBehaviour
         return true;
     }
 
-    public bool AddAccessCard(Sprite icon)
+    public bool AddAccessCard(Sprite icon, Vector2? customSize = null)
     {
-        return AddItem("access_card", "Access Card", icon);
+        return AddItem("access_card", "Access Card", icon, customSize ?? accessCardHotbarSize);
     }
 
     // Kompatibilitas dengan script Access Card lama
     public void AddAccessCard()
     {
-        AddAccessCard(accessCardSprite);
+        AddAccessCard(accessCardSprite, accessCardHotbarSize);
     }
 
-    public bool AddExitKey(Sprite icon)
+    public bool AddExitKey(Sprite icon, Vector2? customSize = null)
     {
-        return AddItem("exit_key", "Exit Key", icon);
+        return AddItem("exit_key", "Exit Key", icon, customSize);
     }
 
     public bool HasItem(string id)
@@ -176,14 +191,12 @@ public class PlayerInventory : MonoBehaviour
         return items.Exists(item => item.itemID == id);
     }
 
-    
     public void SelectSlot(int index)
     {
-        if (slotIcons == null ||
-            index < 0 ||
-            index >= slotIcons.Length)
+        if (slotIcons == null || index < 0 || index >= slotIcons.Length)
             return;
 
+        // Jika slot yang dipilih kosong, tutup preview
         if (index >= items.Count)
         {
             CloseDocumentPreview();
@@ -192,41 +205,42 @@ public class PlayerInventory : MonoBehaviour
 
         InventoryItem item = items[index];
 
-        Debug.Log("Memilih item: " + item.itemName);
-
+        // Jika item BUKAN dokumen (tidak memiliki previewImage), jangan buka DocumentPreviewPanel
         if (item.previewImage == null)
         {
-            Debug.LogWarning(
-                "Preview Image kosong untuk item: " + item.itemName
-            );
+            CloseDocumentPreview();
+            selectedSlot = index;
+            Debug.Log("Memilih item non-dokumen: " + item.itemName);
+            return;
+        }
 
+        // Toggle: jika menekan angka slot dokumen yang sama saat preview terbuka, tutup preview
+        if (selectedSlot == index && documentPreviewPanel != null && documentPreviewPanel.activeSelf)
+        {
             CloseDocumentPreview();
             return;
         }
 
-        if (documentPreviewPanel == null)
+        if (documentPreviewPanel == null || documentPreviewImage == null)
         {
-            Debug.LogWarning("DocumentPreviewPanel belum dihubungkan!");
+            Debug.LogWarning("DocumentPreviewPanel atau DocumentPreviewImage belum dihubungkan!");
             return;
         }
 
-        if (documentPreviewImage == null)
-        {
-            Debug.LogWarning("DocumentPreviewImage belum dihubungkan!");
-            return;
-        }
+        selectedSlot = index;
 
         documentPreviewImage.sprite = item.previewImage;
+        documentPreviewImage.type = Image.Type.Simple;
         documentPreviewImage.preserveAspect = true;
+        documentPreviewImage.color = Color.white;
 
         documentPreviewPanel.SetActive(true);
 
         if (playerMovement != null)
             playerMovement.StopMovement();
 
-        Debug.Log("PREVIEW DOKUMEN BERHASIL DIBUKA!");
+        Debug.Log("Membuka preview dokumen: " + item.itemName);
     }
-
 
     public void CloseDocumentPreview()
     {
@@ -239,7 +253,6 @@ public class PlayerInventory : MonoBehaviour
         if (documentPreviewPanel != null)
             documentPreviewPanel.SetActive(false);
 
-        // Lanjutkan gerakan hanya jika preview sebelumnya terbuka
         if (previewWasOpen && playerMovement != null)
             playerMovement.ResumeMovement();
     }
@@ -256,9 +269,18 @@ public class PlayerInventory : MonoBehaviour
 
             if (i < items.Count)
             {
+                slotIcons[i].gameObject.SetActive(true);
                 slotIcons[i].sprite = items[i].icon;
                 slotIcons[i].enabled = items[i].icon != null;
                 slotIcons[i].color = Color.white;
+                slotIcons[i].type = Image.Type.Simple;
+                slotIcons[i].preserveAspect = true;
+
+                RectTransform rt = slotIcons[i].GetComponent<RectTransform>();
+                if (rt != null)
+                {
+                    rt.sizeDelta = items[i].iconSize;
+                }
             }
             else
             {
