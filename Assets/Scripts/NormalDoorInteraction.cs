@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -7,6 +6,10 @@ public class NormalDoorInteraction : MonoBehaviour
     [Header("Referensi Pintu")]
     public GameObject doorVisual;
     public GameObject doorBarrier;
+
+    [Header("Pengaturan Notifikasi Kepala Player")]
+    public string teksBukaPintu = "Buka Pintu";
+    public string teksTutupPintu = "Tutup Pintu";
 
     private bool playerNearby = false;
     private bool isOpened = false;
@@ -50,6 +53,9 @@ public class NormalDoorInteraction : MonoBehaviour
         if (barrierCollider != null)
             barrierCollider.enabled = !isOpened;
 
+        // Perbarui teks indikator di atas kepala player secara langsung
+        UpdateDoorPrompt();
+
         if (isOpened)
         {
             Debug.Log("Pintu terbuka! Player bisa masuk.");
@@ -60,20 +66,40 @@ public class NormalDoorInteraction : MonoBehaviour
         }
     }
 
+    void UpdateDoorPrompt()
+    {
+        if (InteractionIndicator.instance == null)
+            return;
+
+        string pesan = isOpened ? teksTutupPintu : teksBukaPintu;
+        InteractionIndicator.instance.ShowPrompt(pesan);
+    }
+
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Player"))
+        if (IsPlayer(other))
         {
             playerNearby = true;
-            Debug.Log("Tekan E untuk membuka/menutup pintu.");
+            UpdateDoorPrompt();
         }
     }
 
     void OnTriggerExit2D(Collider2D other)
     {
-        if (other.CompareTag("Player"))
+        if (IsPlayer(other))
         {
             playerNearby = false;
+
+            if (InteractionIndicator.instance != null)
+                InteractionIndicator.instance.HidePrompt();
         }
+    }
+
+    private bool IsPlayer(Collider2D other)
+    {
+        return other.CompareTag("Player") ||
+               other.transform.root.CompareTag("Player") ||
+               (other.attachedRigidbody != null &&
+                other.attachedRigidbody.CompareTag("Player"));
     }
 }

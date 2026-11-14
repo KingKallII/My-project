@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -18,8 +17,12 @@ public class SafeInteraction : MonoBehaviour
     [Header("Referensi Exit Key")]
     public GameObject exitKeyItem;
 
+    [Header("Pengaturan Notifikasi Kepala Player")]
+    public string teksBukaBrankas = "Buka Brankas";
+
     private bool playerNearby = false;
     private bool isUnlocked = false;
+    private bool wasPinPanelOpen = false;
 
     void Start()
     {
@@ -46,8 +49,18 @@ public class SafeInteraction : MonoBehaviour
         if (!playerNearby || isUnlocked)
             return;
 
+        bool isPinPanelCurrentlyOpen = safePinPanel != null && safePinPanel.activeSelf;
+
+        // Jika pemain menutup panel PIN (misal tekan Escape/Close) dan brankas masih terkunci, munculkan lagi prompt E
+        if (wasPinPanelOpen && !isPinPanelCurrentlyOpen)
+        {
+            if (InteractionIndicator.instance != null)
+                InteractionIndicator.instance.ShowPrompt(teksBukaBrankas);
+        }
+        wasPinPanelOpen = isPinPanelCurrentlyOpen;
+
         // Jangan membuka panel berulang kali
-        if (safePinPanel != null && safePinPanel.activeSelf)
+        if (isPinPanelCurrentlyOpen)
             return;
 
         if (Keyboard.current != null &&
@@ -57,13 +70,16 @@ public class SafeInteraction : MonoBehaviour
 
             if (safePinManager != null)
             {
+                // Sembunyikan indikator di atas kepala saat layar keypad PIN muncul
+                if (InteractionIndicator.instance != null)
+                    InteractionIndicator.instance.HidePrompt();
+
                 safePinManager.OpenPinPanel();
+                wasPinPanelOpen = true;
             }
             else
             {
-                Debug.LogWarning(
-                    "SafePinManager belum dihubungkan!"
-                );
+                Debug.LogWarning("SafePinManager belum dihubungkan!");
             }
         }
     }
@@ -75,6 +91,10 @@ public class SafeInteraction : MonoBehaviour
             return;
 
         isUnlocked = true;
+
+        // Pastikan prompt "Buka Brankas" disembunyikan saat brankas terbuka
+        if (InteractionIndicator.instance != null)
+            InteractionIndicator.instance.HidePrompt();
 
         // Hilangkan penghalang brankas
         if (safeBarrier != null)
@@ -102,7 +122,12 @@ public class SafeInteraction : MonoBehaviour
             playerNearby = true;
 
             if (!isUnlocked)
+            {
+                if (InteractionIndicator.instance != null)
+                    InteractionIndicator.instance.ShowPrompt(teksBukaBrankas);
+
                 Debug.Log("Tekan E untuk membuka brankas.");
+            }
         }
     }
 
@@ -111,6 +136,10 @@ public class SafeInteraction : MonoBehaviour
         if (IsPlayer(other))
         {
             playerNearby = false;
+            wasPinPanelOpen = false;
+
+            if (InteractionIndicator.instance != null)
+                InteractionIndicator.instance.HidePrompt();
         }
     }
 
