@@ -7497,7 +7497,7 @@ Transform:
   m_GameObject: {fileID: 1007078826}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 24.1, y: 2.9, z: 0}
+  m_LocalPosition: {x: -42.8, y: -52.5, z: 0}
   m_LocalScale: {x: 0.8, y: 0.8, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -9188,7 +9188,7 @@ MonoBehaviour:
   cursorMoveSpeed: 135
   resetKeLevel1SaatNabrak: 1
   continuousGTAStyleMovement: 0
-  finishReachRadius: 22
+  finishReachRadius: 25
   cursorCollisionRadius: 5
   wallGreenThreshold: 0.38
   wallGreenContrast: 0.15
