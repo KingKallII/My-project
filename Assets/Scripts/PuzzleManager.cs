@@ -9,6 +9,7 @@ public class PuzzleManager : MonoBehaviour
     public PuzzleTile[] tiles;
     public GameObject puzzlePanel;
     public DoorInteraction doorInteraction;
+    public KeypadInteraction keypadInteraction;
 
     [Header("Player Settings")]
     public PlayerMovement playerMovement;
@@ -19,6 +20,10 @@ public class PuzzleManager : MonoBehaviour
     [Header("Notification")]
     public TMP_Text notificationText;
     public float notificationDuration = 2f;
+
+    [Header("Notifikasi Kepala Player")]
+    public string pesanKunciTerbuka = "Kunci Berhasil Dibuka";
+    public float durasiNotifikasiKepala = 2f;
 
     private bool puzzleSolved = false;
     private Coroutine notificationCoroutine;
@@ -109,9 +114,10 @@ public class PuzzleManager : MonoBehaviour
 
         RestorePlayerControl();
 
-        // Reset interaksi keypad
-        KeypadInteraction keypad =
-            FindFirstObjectByType<KeypadInteraction>();
+        // Reset interaksi keypad karena puzzle dibatalkan
+        KeypadInteraction keypad = keypadInteraction != null
+            ? keypadInteraction
+            : FindFirstObjectByType<KeypadInteraction>();
 
         if (keypad != null)
             keypad.ResetInteraction();
@@ -175,29 +181,39 @@ public class PuzzleManager : MonoBehaviour
             return;
         }
 
-        // Tutup puzzle dan kembalikan kontrol
-        ClosePuzzle();
+        // Tutup puzzle, matikan prompt keypad, dan munculkan teks "Kunci Berhasil Dibuka"
+        ClosePuzzleSuccess();
 
         Debug.Log("PINTU BERHASIL DIBUKA!");
     }
 
     // ==============================
-    // MENUTUP PUZZLE
+    // MENUTUP PUZZLE SETELAH BERHASIL
     // ==============================
 
-    void ClosePuzzle()
+    void ClosePuzzleSuccess()
     {
         if (puzzlePanel != null)
             puzzlePanel.SetActive(false);
 
         RestorePlayerControl();
 
-        // Reset interaksi keypad
-        KeypadInteraction keypad =
-            FindFirstObjectByType<KeypadInteraction>();
+        // Tandai interaksi keypad selesai agar teks "Buka Kunci" tidak muncul lagi
+        KeypadInteraction keypad = keypadInteraction != null
+            ? keypadInteraction
+            : FindFirstObjectByType<KeypadInteraction>();
 
         if (keypad != null)
-            keypad.ResetInteraction();
+            keypad.CompleteInteraction();
+
+        // Tampilkan pemberitahuan hijau "Kunci Berhasil Dibuka" di atas kepala player
+        if (InteractionIndicator.instance != null)
+        {
+            InteractionIndicator.instance.ShowSuccess(
+                pesanKunciTerbuka,
+                durasiNotifikasiKepala
+            );
+        }
     }
 
     // ==============================
@@ -322,8 +338,6 @@ public class PuzzleManager : MonoBehaviour
             Mathf.Abs(row - emptyRow) +
             Mathf.Abs(col - emptyCol);
 
-        // Hanya tile yang bersebelahan
-        // dengan kotak kosong yang bisa dipindahkan
         if (distance != 1)
             return;
 
