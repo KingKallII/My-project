@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using System.Collections;
 
@@ -7,7 +6,9 @@ public class CCTVVision : MonoBehaviour
     public enum CCTVFacing
     {
         Left,
-        Right
+        Right,
+        Down,
+        Up
     }
 
     [Header("Pengaturan CCTV")]
@@ -25,8 +26,29 @@ public class CCTVVision : MonoBehaviour
     private bool playerCaught = false;
     private Rigidbody2D playerRb;
 
+    void Awake()
+    {
+        // Jika pada objek CCTV ini (atau parent/child-nya) sudah dipasang CCTVController (yang bisa swipe),
+        // nonaktifkan CCTVVision statis ini agar tidak menimpa arah VisionCone menjadi selalu menghadap ke kanan!
+        if (GetComponent<CCTVController>() != null ||
+            GetComponentInChildren<CCTVController>() != null ||
+            GetComponentInParent<CCTVController>() != null)
+        {
+            enabled = false;
+            return;
+        }
+    }
+
     void Start()
     {
+        if (GetComponent<CCTVController>() != null ||
+            GetComponentInChildren<CCTVController>() != null ||
+            GetComponentInParent<CCTVController>() != null)
+        {
+            enabled = false;
+            return;
+        }
+
         if (player == null)
         {
             GameObject playerObject =
@@ -41,15 +63,6 @@ public class CCTVVision : MonoBehaviour
 
         if (visionCone == null)
             visionCone = GetComponentInChildren<VisionCone>();
-
-        if (visionCone == null)
-            Debug.LogError("VisionCone CCTV belum ditemukan!");
-
-        if (player == null)
-            Debug.LogError("Player tidak ditemukan!");
-
-        if (basementStartPoint == null)
-            Debug.LogError("Basement Start Point belum dihubungkan!");
 
         UpdateCone();
     }
@@ -76,18 +89,29 @@ public class CCTVVision : MonoBehaviour
         }
     }
 
+    Vector2 GetFacingVector()
+    {
+        switch (facing)
+        {
+            case CCTVFacing.Left:
+                return Vector2.left;
+            case CCTVFacing.Down:
+                return Vector2.down;
+            case CCTVFacing.Up:
+                return Vector2.up;
+            case CCTVFacing.Right:
+            default:
+                return Vector2.right;
+        }
+    }
+
     void UpdateCone()
     {
         if (visionCone == null)
             return;
 
-        Vector2 direction =
-            facing == CCTVFacing.Left
-            ? Vector2.left
-            : Vector2.right;
-
         visionCone.SetDirection(
-            direction,
+            GetFacingVector(),
             viewDistance,
             viewAngle
         );
@@ -106,27 +130,25 @@ public class CCTVVision : MonoBehaviour
         if (directionToPlayer.sqrMagnitude < 0.0001f)
             return true;
 
-        Vector2 facingDirection =
-            facing == CCTVFacing.Left
-            ? Vector2.left
-            : Vector2.right;
-
         float angle = Vector2.Angle(
-            facingDirection,
+            GetFacingVector(),
             directionToPlayer
         );
 
         if (angle > viewAngle / 2f)
             return false;
 
-        RaycastHit2D hit = Physics2D.Linecast(
-            origin,
-            player.position,
-            wallLayer
-        );
+        if (wallLayer.value != 0)
+        {
+            RaycastHit2D hit = Physics2D.Linecast(
+                origin,
+                player.position,
+                wallLayer
+            );
 
-        if (hit.collider != null)
-            return false;
+            if (hit.collider != null)
+                return false;
+        }
 
         return true;
     }

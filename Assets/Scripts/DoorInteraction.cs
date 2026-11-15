@@ -20,6 +20,11 @@ public class DoorInteraction : MonoBehaviour
     [Header("Status Access Card")]
     public bool hasScannedCard = false;
 
+    [Header("Pengaturan Notifikasi Kepala Player")]
+    public string teksInteraksi = "Buka Pintu";
+    public string pesanTerkunci = "Pintu Terkunci!";
+    public float durasiPeringatan = 2f;
+
     private bool playerNearby = false;
     private bool isTeleporting = false;
 
@@ -49,29 +54,41 @@ public class DoorInteraction : MonoBehaviour
             // Periksa apakah kartu sudah di-scan
             if (!hasScannedCard)
             {
-                Debug.Log(
-                    "AKSES DITOLAK! SILAKAN SCAN ACCESS CARD."
-                );
+                Debug.Log("AKSES DITOLAK! SILAKAN SCAN ACCESS CARD.");
+
+                // Tampilkan peringatan tanpa ikon E, lalu kembali ke "Buka Pintu" jika masih di dekat pintu
+                if (InteractionIndicator.instance != null)
+                {
+                    InteractionIndicator.instance.ShowAlert(
+                        pesanTerkunci,
+                        durasiPeringatan,
+                        () => playerNearby ? teksInteraksi : ""
+                    );
+                }
 
                 return;
             }
 
-            // Buka puzzle PIN
+            // Buka puzzle PIN jika kartu sudah di-scan
             if (puzzleManager != null)
             {
+                if (InteractionIndicator.instance != null)
+                    InteractionIndicator.instance.HidePrompt();
+
                 puzzleManager.OpenPuzzle();
             }
             else
             {
-                Debug.LogWarning(
-                    "PuzzleManager belum dihubungkan!"
-                );
+                Debug.LogWarning("PuzzleManager belum dihubungkan!");
             }
 
             return;
         }
 
-        // Jika pintu sudah terbuka, masuk ke lorong
+        // Jika pintu sudah terbuka, sembunyikan prompt lalu masuk ke lorong
+        if (InteractionIndicator.instance != null)
+            InteractionIndicator.instance.HidePrompt();
+
         TeleportToCorridor();
     }
 
@@ -79,7 +96,6 @@ public class DoorInteraction : MonoBehaviour
     public void GrantAccess()
     {
         hasScannedCard = true;
-
         Debug.Log("AKSES PINTU DIBERIKAN!");
     }
 
@@ -87,7 +103,6 @@ public class DoorInteraction : MonoBehaviour
     public void UnlockDoor()
     {
         isLocked = false;
-
         Debug.Log("KUNCI PINTU BERHASIL DIBUKA!");
     }
 
@@ -126,9 +141,14 @@ public class DoorInteraction : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Player"))
+        if (IsPlayer(other))
         {
             playerNearby = true;
+
+            if (!isTeleporting && InteractionIndicator.instance != null)
+            {
+                InteractionIndicator.instance.ShowPrompt(teksInteraksi, true);
+            }
 
             Debug.Log("Tekan E untuk berinteraksi dengan pintu.");
         }
@@ -136,9 +156,22 @@ public class DoorInteraction : MonoBehaviour
 
     void OnTriggerExit2D(Collider2D other)
     {
-        if (other.CompareTag("Player"))
+        if (IsPlayer(other))
         {
             playerNearby = false;
+
+            if (InteractionIndicator.instance != null)
+            {
+                InteractionIndicator.instance.HidePrompt();
+            }
         }
+    }
+
+    private bool IsPlayer(Collider2D other)
+    {
+        return other.CompareTag("Player") ||
+               other.transform.root.CompareTag("Player") ||
+               (other.attachedRigidbody != null &&
+                other.attachedRigidbody.CompareTag("Player"));
     }
 }
