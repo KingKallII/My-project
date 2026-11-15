@@ -1,10 +1,19 @@
 fileFormatVersion: 2
-guid: b01d134153afded41bb8780a30426d1f
+guid: 1efcb1d1c90fab240ba667151ab8d76e
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 1780562835318807350
-    second: rak_box_0
+      213: 7724532057862542088
+    second: Vector 118_0
+  - first:
+      213: 6906407809871743350
+    second: Vector 118_1
+  - first:
+      213: -6055759053463715173
+    second: Vector 118_2
+  - first:
+      213: -8816538314374420021
+    second: Vector 118_3
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -102,13 +111,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: rak_box_0
+      name: Vector 118_0
       rect:
         serializedVersion: 2
         x: 0
-        y: 0
-        width: 346
-        height: 596
+        y: 2334
+        width: 1396
+        height: 644
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -117,8 +126,74 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 63b90730774d5b810800000000000000
-      internalID: 1780562835318807350
+      spriteID: 8039305fafc033b60800000000000000
+      internalID: 7724532057862542088
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Vector 118_1
+      rect:
+        serializedVersion: 2
+        x: 2366
+        y: 2327
+        width: 1255
+        height: 649
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6798365bf4d78df50800000000000000
+      internalID: 6906407809871743350
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Vector 118_2
+      rect:
+        serializedVersion: 2
+        x: 3213
+        y: 1301
+        width: 421
+        height: 558
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b9280f4c93f95fba0800000000000000
+      internalID: -6055759053463715173
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Vector 118_3
+      rect:
+        serializedVersion: 2
+        x: 538
+        y: 0
+        width: 2684
+        height: 577
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bc967177d1d55a580800000000000000
+      internalID: -8816538314374420021
       vertices: []
       indices: 
       edges: []
@@ -137,7 +212,10 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      rak_box_0: 1780562835318807350
+      Vector 118_0: 7724532057862542088
+      Vector 118_1: 6906407809871743350
+      Vector 118_2: -6055759053463715173
+      Vector 118_3: -8816538314374420021
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
