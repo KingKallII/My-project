@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -7,26 +8,22 @@ public class NormalDoorInteraction : MonoBehaviour
     public GameObject doorVisual;
     public GameObject doorBarrier;
 
-    [Header("Pengaturan Notifikasi Kepala Player")]
-    public string teksBukaPintu = "Buka Pintu";
-    public string teksTutupPintu = "Tutup Pintu";
-
     private bool playerNearby = false;
     private bool isOpened = false;
 
     void Update()
     {
-        if (!playerNearby)
+        if (isOpened || !playerNearby)
             return;
 
         if (Keyboard.current != null &&
             Keyboard.current.eKey.wasPressedThisFrame)
         {
-            ToggleDoor();
+            OpenDoor();
         }
     }
 
-    void ToggleDoor()
+    void OpenDoor()
     {
         if (doorVisual == null || doorBarrier == null)
         {
@@ -36,70 +33,39 @@ public class NormalDoorInteraction : MonoBehaviour
             return;
         }
 
-        // Ubah status pintu
-        isOpened = !isOpened;
+        isOpened = true;
 
-        // Atur visual pintu
+        // Hilangkan gambar pintu.
         SpriteRenderer sprite =
             doorVisual.GetComponent<SpriteRenderer>();
 
         if (sprite != null)
-            sprite.enabled = !isOpened;
+            sprite.enabled = false;
 
-        // Atur penghalang fisik pintu
+        // Hilangkan penghalang fisik pintu.
         Collider2D barrierCollider =
             doorBarrier.GetComponent<Collider2D>();
 
         if (barrierCollider != null)
-            barrierCollider.enabled = !isOpened;
+            barrierCollider.enabled = false;
 
-        // Perbarui teks indikator di atas kepala player secara langsung
-        UpdateDoorPrompt();
-
-        if (isOpened)
-        {
-            Debug.Log("Pintu terbuka! Player bisa masuk.");
-        }
-        else
-        {
-            Debug.Log("Pintu tertutup!");
-        }
-    }
-
-    void UpdateDoorPrompt()
-    {
-        if (InteractionIndicator.instance == null)
-            return;
-
-        string pesan = isOpened ? teksTutupPintu : teksBukaPintu;
-        InteractionIndicator.instance.ShowPrompt(pesan);
+        Debug.Log("Pintu terbuka! Player bisa masuk.");
     }
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (IsPlayer(other))
+        if (other.CompareTag("Player"))
         {
             playerNearby = true;
-            UpdateDoorPrompt();
+            Debug.Log("Tekan E untuk membuka pintu.");
         }
     }
 
     void OnTriggerExit2D(Collider2D other)
     {
-        if (IsPlayer(other))
+        if (other.CompareTag("Player"))
         {
             playerNearby = false;
-
-            if (InteractionIndicator.instance != null)
-                InteractionIndicator.instance.HidePrompt();
         }
-    }
-
-    private bool IsPlayer(Collider2D other)
-    {
-        return other.CompareTag("Player") ||
-               other.transform.root.CompareTag("Player") ||
-               (other.attachedRigidbody != null &&
-                other.attachedRigidbody.CompareTag("Player"));
     }
 }

@@ -1,22 +1,24 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using TMPro;
 
 public class AccessCardPickup : MonoBehaviour
 {
     [Header("Player")]
     public PlayerInventory playerInventory;
 
-    [Header("Tampilan Khusus di Hotbar")]
-    [Tooltip("Masukkan sprite kartu baru untuk hotbar. Jika kosong, otomatis memakai Access Card Sprite di PlayerInventory.")]
-    public Sprite hotbarIcon;
-    public bool gunakanUkuranKhusus = true;
-    public Vector2 ukuranDiHotbar = new Vector2(140f, 85f);
-
-    [Header("Pengaturan Notifikasi Kepala Player")]
-    public string teksInteraksi = "Ambil Access Card";
+    [Header("UI Interaksi")]
+    public GameObject interactionPrompt;
+    public TMP_Text promptText;
 
     private bool playerNearby = false;
     private bool isCollected = false;
+
+    void Start()
+    {
+        if (interactionPrompt != null)
+            interactionPrompt.SetActive(false);
+    }
 
     void Update()
     {
@@ -40,28 +42,22 @@ public class AccessCardPickup : MonoBehaviour
             return;
         }
 
-        if (playerInventory.HasAccessCard)
+        if (playerInventory.hasAccessCard)
         {
             Debug.Log("Player sudah memiliki Access Card!");
             return;
         }
 
-        Sprite iconToUse = hotbarIcon != null ? hotbarIcon : playerInventory.accessCardSprite;
-        Vector2? sizeToUse = gunakanUkuranKhusus ? ukuranDiHotbar : (Vector2?)null;
-
-        bool success = playerInventory.AddAccessCard(iconToUse, sizeToUse);
-
-        if (!success)
-            return;
+        // Masukkan kartu ke inventory
+        playerInventory.AddAccessCard();
 
         isCollected = true;
 
-        // Sembunyikan ikon E & teks di atas kepala player sebelum objek kartu dinonaktifkan
-        if (InteractionIndicator.instance != null)
-        {
-            InteractionIndicator.instance.HidePrompt();
-        }
+        // Sembunyikan petunjuk
+        if (interactionPrompt != null)
+            interactionPrompt.SetActive(false);
 
+        // Hilangkan objek kartu
         gameObject.SetActive(false);
 
         Debug.Log("ACCESS CARD BERHASIL DIAMBIL!");
@@ -69,43 +65,38 @@ public class AccessCardPickup : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (!IsPlayer(other) || isCollected)
+        if (!other.CompareTag("Player") || isCollected)
             return;
 
         playerNearby = true;
 
-        if (playerInventory == null)
-            playerInventory = other.GetComponentInParent<PlayerInventory>();
+        playerInventory = other.GetComponent<PlayerInventory>();
 
-        if (playerInventory != null && !playerInventory.HasAccessCard)
+        if (playerInventory == null)
+            playerInventory =
+                other.GetComponentInParent<PlayerInventory>();
+
+        if (playerInventory != null &&
+            !playerInventory.hasAccessCard)
         {
-            // Munculkan ikon E + "Ambil Access Card" di atas kepala player
-            if (InteractionIndicator.instance != null)
-            {
-                InteractionIndicator.instance.ShowPrompt(teksInteraksi, true);
-            }
+            if (interactionPrompt != null)
+                interactionPrompt.SetActive(true);
+
+            if (promptText != null)
+                promptText.text = "Tekan E untuk mengambil Access Card";
         }
     }
 
     void OnTriggerExit2D(Collider2D other)
     {
-        if (!IsPlayer(other))
+        if (!other.CompareTag("Player"))
             return;
 
         playerNearby = false;
 
-        // Sembunyikan indikator saat player menjauh dari Access Card
-        if (InteractionIndicator.instance != null)
-        {
-            InteractionIndicator.instance.HidePrompt();
-        }
-    }
+        if (interactionPrompt != null)
+            interactionPrompt.SetActive(false);
 
-    private bool IsPlayer(Collider2D other)
-    {
-        return other.CompareTag("Player") ||
-               other.transform.root.CompareTag("Player") ||
-               (other.attachedRigidbody != null &&
-                other.attachedRigidbody.CompareTag("Player"));
+        playerInventory = null;
     }
 }
