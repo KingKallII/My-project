@@ -85,14 +85,26 @@ public class RPSMinigameManager : MonoBehaviour
     [Tooltip("Jeda waktu antar kemunculan kartu Kertas -> Gunting -> Batu (detik).")]
     public float cardStaggerDelay = 0.18f;
 
-    [Header("Pengaturan Animasi Hasil Adu")]
+    [Header("Pengaturan Animasi Kalah & Layar Fade 'KAMU TERTANGKAP!'")]
+    [Tooltip("Masukkan sprite PNG 'FadePanelTertangkap' (latar hitam bertuliskan KAMU TERTANGKAP!). Jika kosong, otomatis mengambil dari CCTVAlarmEffect.")]
+    public Sprite caughtScreenSprite;
+
+    [Tooltip("Durasi transisi fade-in menuju layar hitam 'KAMU TERTANGKAP!' saat kalah minigame (detik).")]
+    public float loseFadeInDuration = 0.4f;
+
+    [Tooltip("Durasi tampilnya layar hitam 'KAMU TERTANGKAP!' sebelum layar kembali terang di Checkpoint (detik).")]
+    public float loseBlackHoldDuration = 1.5f;
+
+    [Tooltip("Durasi transisi fade-out dari layar hitam kembali ke permainan setelah respawn di Checkpoint (detik).")]
+    public float loseFadeOutDuration = 0.45f;
+
     [Tooltip("Seberapa jauh gambar yang kalah turun ke bawah (piksel UI) sesuai desain Figma.")]
     public float loseDropOffset = 35f;
 
     [Tooltip("Kekuatan getaran (shake) saat karakter kaget/kalah.")]
     public float shakeIntensity = 12f;
 
-    [Tooltip("Durasi animasi kaget sebelum minigame selesai (detik).")]
+    [Tooltip("Durasi animasi kaget sebelum masuk ke layar fade hitam (detik).")]
     public float resultDisplayDuration = 1.5f;
 
     private GameObject currentPlayer;
@@ -100,6 +112,7 @@ public class RPSMinigameManager : MonoBehaviour
     private GuardPatrol currentGuardPatrol;
 
     private Image minigamePanelImage;
+    private Sprite defaultMinigameBgSprite;
     private RectTransform playerPortraitRect;
     private RectTransform guardPortraitRect;
     private Vector2 playerDefaultAnchoredPos;
@@ -130,7 +143,12 @@ public class RPSMinigameManager : MonoBehaviour
     {
         SaveDefaultTransforms();
 
-        // Hubungkan klik tombol secara otomatis ke fungsi pemilihan kartu
+        // Jika slot caughtScreenSprite belum diisi manual, ambil otomatis dari CCTVAlarmEffect (jika ada)
+        if (caughtScreenSprite == null && CCTVAlarmEffect.Instance != null && CCTVAlarmEffect.Instance.caughtScreenSprite != null)
+        {
+            caughtScreenSprite = CCTVAlarmEffect.Instance.caughtScreenSprite;
+        }
+
         if (btnKertas != null)
         {
             btnKertas.onClick.RemoveAllListeners();
@@ -168,7 +186,11 @@ public class RPSMinigameManager : MonoBehaviour
             return;
 
         if (minigamePanel != null)
+        {
             minigamePanelImage = minigamePanel.GetComponent<Image>();
+            if (minigamePanelImage != null)
+                defaultMinigameBgSprite = minigamePanelImage.sprite;
+        }
 
         if (playerPortraitImage != null)
         {
@@ -196,13 +218,15 @@ public class RPSMinigameManager : MonoBehaviour
         defaultTransformsSaved = true;
     }
 
-    /// <summary>
-    /// Dipanggil oleh GuardCatch saat Player tertangkap oleh Guard.
-    /// Memulai urutan animasi: Layar Hitam (1 dtk) -> Background -> Karakter dari Samping -> Kartu Satu per Satu.
-    /// </summary>
     public void StartMinigame(GameObject playerObj, GuardCatch guardCatch, GuardPatrol guardPatrol)
     {
         SaveDefaultTransforms();
+
+        // Sinkronkan caughtScreenSprite dari CCTVAlarmEffect jika masih kosong
+        if (caughtScreenSprite == null && CCTVAlarmEffect.Instance != null && CCTVAlarmEffect.Instance.caughtScreenSprite != null)
+        {
+            caughtScreenSprite = CCTVAlarmEffect.Instance.caughtScreenSprite;
+        }
 
         currentPlayer = playerObj;
         currentGuardCatch = guardCatch;
@@ -220,14 +244,14 @@ public class RPSMinigameManager : MonoBehaviour
         activeSequenceCoroutine = StartCoroutine(PlayIntroAndSelectionSequence());
     }
 
-    /// <summary>
-    /// Urutan animasi pembuka minigame secara bertahap agar terasa natural.
-    /// </summary>
     IEnumerator PlayIntroAndSelectionSequence()
     {
         isWaitingForChoice = false;
 
-        // Sembunyikan seluruh elemen anak terlebih dahulu selama layar hitam
+        // Pastikan gambar background kembali menggunakan sprite background VS asli
+        if (minigamePanelImage != null && defaultMinigameBgSprite != null)
+            minigamePanelImage.sprite = defaultMinigameBgSprite;
+
         if (playerPortraitImage != null)
             playerPortraitImage.gameObject.SetActive(false);
 
@@ -249,24 +273,19 @@ public class RPSMinigameManager : MonoBehaviour
             statusTitleText.gameObject.SetActive(false);
         }
 
-        // Pasang sprite pose normal sejak awal
         if (playerPortraitImage != null && playerNormalSprite != null)
             playerPortraitImage.sprite = playerNormalSprite;
 
         if (guardPortraitImage != null && guardNormalSprite != null)
             guardPortraitImage.sprite = guardNormalSprite;
 
-        // =========================================================================
-        // TAHAP 1: LAYAR HITAM SEKITAR 1 DETIK
-        // =========================================================================
+        // 1. Layar hitam sekitar 1 detik
         if (minigamePanelImage != null)
             minigamePanelImage.color = Color.black;
 
         yield return new WaitForSeconds(blackScreenDuration);
 
-        // =========================================================================
-        // TAHAP 2: MUNCULKAN BACKGROUND TERLEBIH DAHULU (FADE DARI HITAM KE TERANG)
-        // =========================================================================
+        // 2. Munculkan background VS terlebih dahulu
         if (minigamePanelImage != null)
         {
             float elapsedBg = 0f;
@@ -283,12 +302,9 @@ public class RPSMinigameManager : MonoBehaviour
         if (statusTitleText != null)
             statusTitleText.gameObject.SetActive(true);
 
-        // Jeda singkat agar background terlihat jelas sebelum karakter masuk
         yield return new WaitForSeconds(0.15f);
 
-        // =========================================================================
-        // TAHAP 3: MUNCULKAN PLAYER (DARI KIRI) & GUARD (DARI KANAN)
-        // =========================================================================
+        // 3. Munculkan Player (dari kiri) & Guard (dari kanan)
         Vector2 playerStartPos = playerDefaultAnchoredPos + new Vector2(-characterSlideDistance, 0f);
         Vector2 guardStartPos = guardDefaultAnchoredPos + new Vector2(characterSlideDistance, 0f);
 
@@ -309,7 +325,6 @@ public class RPSMinigameManager : MonoBehaviour
         {
             elapsedSlide += Time.deltaTime;
             float t = Mathf.Clamp01(elapsedSlide / characterSlideDuration);
-            // Kurva Ease-Out Cubic agar gerakan meluncur cepat di awal dan mengerem halus di akhir
             float easedT = 1f - Mathf.Pow(1f - t, 3f);
 
             if (playerPortraitRect != null)
@@ -329,24 +344,17 @@ public class RPSMinigameManager : MonoBehaviour
 
         yield return new WaitForSeconds(0.12f);
 
-        // =========================================================================
-        // TAHAP 4: MUNCULKAN PILIHAN KARTU SATU PER SATU (KERTAS -> GUNTING -> BATU)
-        // =========================================================================
+        // 4. Munculkan pilihan kartu satu per satu (Kertas -> Gunting -> Batu)
         yield return StartCoroutine(RevealChoiceCardsOneByOne());
 
-        // Setelah semua kartu muncul, izinkan Player memilih kartu
         isWaitingForChoice = true;
     }
 
-    /// <summary>
-    /// Menampilkan ke-3 kartu pilihan secara berurutan: Kertas dulu, lalu Gunting, terakhir Batu.
-    /// </summary>
     IEnumerator RevealChoiceCardsOneByOne()
     {
         if (choiceButtonsContainer != null)
             choiceButtonsContainer.SetActive(true);
 
-        // Sembunyikan ke-3 tombol terlebih dahulu dengan skala 0
         if (btnKertas != null)
         {
             btnKertas.gameObject.SetActive(false);
@@ -365,7 +373,6 @@ public class RPSMinigameManager : MonoBehaviour
             btnBatu.transform.localScale = Vector3.zero;
         }
 
-        // 1. Munculkan Kartu Kertas
         if (btnKertas != null)
         {
             btnKertas.gameObject.SetActive(true);
@@ -373,7 +380,6 @@ public class RPSMinigameManager : MonoBehaviour
             yield return new WaitForSeconds(cardStaggerDelay);
         }
 
-        // 2. Munculkan Kartu Gunting
         if (btnGunting != null)
         {
             btnGunting.gameObject.SetActive(true);
@@ -381,7 +387,6 @@ public class RPSMinigameManager : MonoBehaviour
             yield return new WaitForSeconds(cardStaggerDelay);
         }
 
-        // 3. Munculkan Kartu Batu
         if (btnBatu != null)
         {
             btnBatu.gameObject.SetActive(true);
@@ -389,9 +394,6 @@ public class RPSMinigameManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Animasi pop-in natural untuk satu tombol kartu (dari skala 0 -> membal sedikit -> ukuran normal).
-    /// </summary>
     IEnumerator AnimateSingleButtonPopIn(Transform targetTransform, Vector3 targetScale)
     {
         if (targetTransform == null)
@@ -407,13 +409,11 @@ public class RPSMinigameManager : MonoBehaviour
 
             if (t < 0.7f)
             {
-                // Membesar dari 0 ke 1.12x
                 float subT = t / 0.7f;
                 targetTransform.localScale = Vector3.Lerp(Vector3.zero, overshootScale, subT);
             }
             else
             {
-                // Kembali halus dari 1.12x ke 1.0x
                 float subT = (t - 0.7f) / 0.3f;
                 targetTransform.localScale = Vector3.Lerp(overshootScale, targetScale, subT);
             }
@@ -431,7 +431,6 @@ public class RPSMinigameManager : MonoBehaviour
 
         isWaitingForChoice = false;
 
-        // Guard memilih secara acak antara Kertas (0), Gunting (1), atau Batu (2)
         RPSChoice guardChoice = (RPSChoice)Random.Range(0, 3);
 
         if (activeSequenceCoroutine != null)
@@ -442,7 +441,6 @@ public class RPSMinigameManager : MonoBehaviour
 
     IEnumerator PlayRoundSequence(RPSChoice playerChoice, RPSChoice guardChoice)
     {
-        // 1. Sembunyikan 3 tombol pilihan dan tampilkan kartu yang diadu di kiri & kanan "VS"
         if (choiceButtonsContainer != null)
             choiceButtonsContainer.SetActive(false);
 
@@ -460,15 +458,12 @@ public class RPSMinigameManager : MonoBehaviour
             StartCoroutine(AnimateCardPop(guardSelectedCardImage.rectTransform));
         }
 
-        // Jeda singkat saat kedua kartu beradu di layar
         yield return new WaitForSeconds(0.4f);
 
-        // 2. Tentukan pemenang: 0 = Seri, 1 = Player Menang, -1 = Player Kalah
         int result = EvaluateWinner(playerChoice, guardChoice);
 
         if (result == 0)
         {
-            // SERI -> Ulangi pemilihan kartu dengan kemunculan kartu satu per satu
             if (statusTitleText != null)
                 statusTitleText.text = "Seri! Pilih Lagi!";
 
@@ -489,7 +484,7 @@ public class RPSMinigameManager : MonoBehaviour
         }
         else if (result == 1)
         {
-            // PLAYER MENANG (Guard ganti gambar kaget, bergetar & turun sedikit)
+            // PLAYER MENANG
             if (statusTitleText != null)
                 statusTitleText.text = "Kamu Menang!";
 
@@ -511,7 +506,7 @@ public class RPSMinigameManager : MonoBehaviour
         }
         else
         {
-            // PLAYER KALAH (Player ganti gambar kaget, bergetar & turun sedikit)
+            // PLAYER KALAH -> Animasi kaget lalu masuk ke layar Fade Hitam "KAMU TERTANGKAP!" seperti CCTV!
             if (statusTitleText != null)
                 statusTitleText.text = "Kamu Kalah!";
 
@@ -529,13 +524,10 @@ public class RPSMinigameManager : MonoBehaviour
                 yield return new WaitForSeconds(resultDisplayDuration);
             }
 
-            FinishMinigamePlayerLose();
+            yield return StartCoroutine(FinishMinigamePlayerLoseWithFadeRoutine());
         }
     }
 
-    /// <summary>
-    /// Efek animasi pop-up saat kartu pilihan muncul di samping tulisan VS.
-    /// </summary>
     IEnumerator AnimateCardPop(RectTransform cardRect)
     {
         if (cardRect == null)
@@ -559,9 +551,6 @@ public class RPSMinigameManager : MonoBehaviour
         cardRect.localScale = targetScale;
     }
 
-    /// <summary>
-    /// Animasi karakter yang kalah: bergetar ke kiri-kanan sambil turun sedikit (sesuai mockup Figma).
-    /// </summary>
     IEnumerator AnimateLoseReaction(RectTransform targetRect, Vector2 startPos)
     {
         float elapsed = 0f;
@@ -612,18 +601,96 @@ public class RPSMinigameManager : MonoBehaviour
         Debug.Log("MINIGAME MENANG! GUARD PINGSAN!");
     }
 
-    void FinishMinigamePlayerLose()
+    /// <summary>
+    /// Saat Player KALAH Kertas-Gunting-Batu:
+    /// 1. Layar minigame melakukan fade ke hitam.
+    /// 2. Menampilkan gambar hitam bertuliskan "KAMU TERTANGKAP!" (sama seperti saat tertangkap CCTV).
+    /// 3. Memindahkan Player ke Checkpoint & me-reset Guard di balik layar hitam.
+    /// 4. Melakukan fade-out halus kembali ke permainan di Checkpoint.
+    /// </summary>
+    IEnumerator FinishMinigamePlayerLoseWithFadeRoutine()
     {
+        // 1. Fade layar minigame menjadi gelap (hitam)
+        if (minigamePanelImage != null)
+        {
+            float elapsed = 0f;
+            while (elapsed < loseFadeInDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / loseFadeInDuration);
+                minigamePanelImage.color = Color.Lerp(Color.white, Color.black, t);
+                yield return null;
+            }
+            minigamePanelImage.color = Color.black;
+        }
+
+        // Sembunyikan karakter, kartu adu, dan teks "Pilih Strategi"
+        if (playerPortraitImage != null)
+            playerPortraitImage.gameObject.SetActive(false);
+
+        if (guardPortraitImage != null)
+            guardPortraitImage.gameObject.SetActive(false);
+
+        if (playerSelectedCardImage != null)
+            playerSelectedCardImage.gameObject.SetActive(false);
+
+        if (guardSelectedCardImage != null)
+            guardSelectedCardImage.gameObject.SetActive(false);
+
+        if (statusTitleText != null)
+            statusTitleText.gameObject.SetActive(false);
+
+        // 2. Tampilkan gambar "KAMU TERTANGKAP!" (caughtScreenSprite) sama seperti saat tertangkap CCTV
+        if (minigamePanelImage != null && caughtScreenSprite != null)
+        {
+            minigamePanelImage.sprite = caughtScreenSprite;
+            minigamePanelImage.color = Color.white;
+        }
+
+        // 3. Pindahkan Player ke Checkpoint & reset Guard ke Titik A selama layar hitam "KAMU TERTANGKAP!" tampil
+        if (CheckpointManager.Instance != null && currentPlayer != null)
+        {
+            CheckpointManager.Instance.RespawnPlayer(currentPlayer);
+        }
+
+        if (currentGuardPatrol != null)
+        {
+            currentGuardPatrol.ResetGuard();
+        }
+
+        // Tahan tampilan layar hitam "KAMU TERTANGKAP!" selama loseBlackHoldDuration (default 1.5 detik)
+        yield return new WaitForSeconds(loseBlackHoldDuration);
+
+        // 4. Fade-out halus dari layar hitam kembali ke permainan di Checkpoint
+        if (minigamePanelImage != null)
+        {
+            Color startColor = minigamePanelImage.color;
+            Color transparentColor = new Color(startColor.r, startColor.g, startColor.b, 0f);
+
+            float elapsedOut = 0f;
+            while (elapsedOut < loseFadeOutDuration)
+            {
+                elapsedOut += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsedOut / loseFadeOutDuration);
+                minigamePanelImage.color = Color.Lerp(startColor, transparentColor, t);
+                yield return null;
+            }
+        }
+
+        // Kembalikan sprite background VS asli untuk pemakaian minigame berikutnya
+        if (minigamePanelImage != null)
+        {
+            if (defaultMinigameBgSprite != null)
+                minigamePanelImage.sprite = defaultMinigameBgSprite;
+
+            minigamePanelImage.color = Color.white;
+        }
+
         if (minigamePanel != null)
             minigamePanel.SetActive(false);
 
         if (hotbarPanel != null)
             hotbarPanel.SetActive(true);
-
-        if (CheckpointManager.Instance != null && currentPlayer != null)
-        {
-            CheckpointManager.Instance.RespawnPlayer(currentPlayer);
-        }
 
         if (currentPlayer != null)
         {
@@ -632,17 +699,12 @@ public class RPSMinigameManager : MonoBehaviour
                 pm.ResumeMovement();
         }
 
-        if (currentGuardPatrol != null)
-        {
-            currentGuardPatrol.ResetGuard();
-        }
-
         if (currentGuardCatch != null)
         {
             currentGuardCatch.OnMinigamePlayerLost();
         }
 
-        Debug.Log("MINIGAME KALAH! PLAYER KEMBALI KE CHECKPOINT!");
+        Debug.Log("MINIGAME KALAH! LAYAR FADE TERTANGKAP SELESAI & PLAYER KEMBALI KE CHECKPOINT!");
     }
 
     int EvaluateWinner(RPSChoice player, RPSChoice guard)

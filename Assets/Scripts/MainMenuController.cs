@@ -45,19 +45,6 @@ public class MainMenuController : MonoBehaviour
     [Tooltip("Opsional: Tombol silang (X) untuk menutup Panel Settings.")]
     public Button closeSettingsButton;
 
-    [Header("Panel Pop-Up Quit Game? (Konfirmasi Keluar)")]
-    [Tooltip("Masukkan objek Panel Quit (kotak pop-up 'Quit Game? Are you sure...').")]
-    public GameObject quitConfirmPanel;
-
-    [Tooltip("Opsional: Tombol 'Yes' di dalam Panel Quit untuk keluar dari game.")]
-    public Button confirmQuitYesButton;
-
-    [Tooltip("Opsional: Tombol 'No' di dalam Panel Quit untuk batal keluar.")]
-    public Button cancelQuitNoButton;
-
-    [Tooltip("Opsional: Tombol silang (X) di pojok kanan atas Panel Quit untuk batal keluar.")]
-    public Button closeQuitXButton;
-
     public const string PREF_MUSIC_VOL = "MidnightCaptive_MusicVol";
     public const string PREF_SFX_VOL = "MidnightCaptive_SFXVol";
 
@@ -67,20 +54,18 @@ public class MainMenuController : MonoBehaviour
 
     void Awake()
     {
+        // Pastikan waktu game berjalan normal saat berada di Main Menu
+        Time.timeScale = 1f;
+
         SetupAudioSources();
 
-        // Ambil nilai volume yang tersimpan (Default: Music = 100% [1.0], SFX = 50% [0.5] sesuai desain Figma)
         currentMusicVolume = PlayerPrefs.GetFloat(PREF_MUSIC_VOL, 1f);
         currentSFXVolume = PlayerPrefs.GetFloat(PREF_SFX_VOL, 0.5f);
 
         ApplyVolumesToAudioSources();
 
-        // Sembunyikan kedua panel pop-up saat baru masuk ke Main Menu
         if (settingsPanel != null)
             settingsPanel.SetActive(false);
-
-        if (quitConfirmPanel != null)
-            quitConfirmPanel.SetActive(false);
     }
 
     void Start()
@@ -88,7 +73,6 @@ public class MainMenuController : MonoBehaviour
         SetupSlidersAndButtons();
         RegisterClickSoundToAllButtons();
 
-        // Putar musik latar Main Menu secara otomatis
         if (musicAudioSource != null && mainMenuMusicClip != null)
         {
             musicAudioSource.clip = mainMenuMusicClip;
@@ -128,12 +112,10 @@ public class MainMenuController : MonoBehaviour
 
     void SetupSlidersAndButtons()
     {
-        // 1. Atur Slider Music Volume
         if (musicVolumeSlider != null)
         {
             musicVolumeSlider.onValueChanged.RemoveListener(OnMusicSliderChanged);
 
-            // Mendukung slider dengan rentang 0..1 maupun 0..100
             if (musicVolumeSlider.maxValue > 1.5f)
                 musicVolumeSlider.value = currentMusicVolume * 100f;
             else
@@ -142,7 +124,6 @@ public class MainMenuController : MonoBehaviour
             musicVolumeSlider.onValueChanged.AddListener(OnMusicSliderChanged);
         }
 
-        // 2. Atur Slider SFX Volume
         if (sfxVolumeSlider != null)
         {
             sfxVolumeSlider.onValueChanged.RemoveListener(OnSFXSliderChanged);
@@ -157,35 +138,13 @@ public class MainMenuController : MonoBehaviour
 
         UpdateVolumePercentageTexts();
 
-        // 3. Hubungkan tombol-tombol di dalam Panel Settings dan Panel Quit secara otomatis
         if (closeSettingsButton != null)
         {
             closeSettingsButton.onClick.RemoveListener(CloseSettings);
             closeSettingsButton.onClick.AddListener(CloseSettings);
         }
-
-        if (confirmQuitYesButton != null)
-        {
-            confirmQuitYesButton.onClick.RemoveListener(ConfirmQuitGame);
-            confirmQuitYesButton.onClick.AddListener(ConfirmQuitGame);
-        }
-
-        if (cancelQuitNoButton != null)
-        {
-            cancelQuitNoButton.onClick.RemoveListener(CloseQuitPanel);
-            cancelQuitNoButton.onClick.AddListener(CloseQuitPanel);
-        }
-
-        if (closeQuitXButton != null)
-        {
-            closeQuitXButton.onClick.RemoveListener(CloseQuitPanel);
-            closeQuitXButton.onClick.AddListener(CloseQuitPanel);
-        }
     }
 
-    /// <summary>
-    /// Otomatis memasang suara klik (buttonClickSFX) ke seluruh tombol (Button) yang ada di Main Menu Canvas.
-    /// </summary>
     void RegisterClickSoundToAllButtons()
     {
         Button[] allButtons = FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -261,7 +220,7 @@ public class MainMenuController : MonoBehaviour
     }
 
     // =========================================================================
-    // FUNGSI TOMBOL MAIN MENU (NEW GAME, CONTINUE, SETTINGS, QUIT/EXIT)
+    // FUNGSI TOMBOL MAIN MENU (NEW GAME, CONTINUE, SETTINGS, EXIT)
     // =========================================================================
 
     public void NewGame()
@@ -279,14 +238,8 @@ public class MainMenuController : MonoBehaviour
         Debug.Log("Tombol Continue ditekan.");
     }
 
-    /// <summary>
-    /// Dipanggil saat tombol "Settings" di Main Menu diklik: memunculkan Panel Pop-Up Settings.
-    /// </summary>
     public void OpenSettings()
     {
-        if (quitConfirmPanel != null)
-            quitConfirmPanel.SetActive(false);
-
         if (settingsPanel != null)
         {
             settingsPanel.SetActive(true);
@@ -298,9 +251,6 @@ public class MainMenuController : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Dipanggil saat tombol silang (X) di Panel Settings diklik.
-    /// </summary>
     public void CloseSettings()
     {
         if (settingsPanel != null)
@@ -308,41 +258,12 @@ public class MainMenuController : MonoBehaviour
     }
 
     /// <summary>
-    /// Dipanggil saat tombol "Exit" / "Quit" di Main Menu diklik:
-    /// Membuka pop-up konfirmasi "Quit Game? Are you sure you want to quit?".
+    /// Di Main Menu, tombol Exit langsung menutup aplikasi (karena pop-up peringatan Quit
+    /// kini dipindahkan ke menu Pause saat permainan sudah dimulai).
     /// </summary>
     public void QuitGame()
     {
-        if (settingsPanel != null)
-            settingsPanel.SetActive(false);
-
-        if (quitConfirmPanel != null)
-        {
-            quitConfirmPanel.SetActive(true);
-            quitConfirmPanel.transform.SetAsLastSibling();
-        }
-        else
-        {
-            // Fallback jika panel konfirmasi belum dipasang: langsung keluar
-            ConfirmQuitGame();
-        }
-    }
-
-    /// <summary>
-    /// Dipanggil saat tombol "No" atau tombol "X" pada pop-up Quit Game diklik.
-    /// </summary>
-    public void CloseQuitPanel()
-    {
-        if (quitConfirmPanel != null)
-            quitConfirmPanel.SetActive(false);
-    }
-
-    /// <summary>
-    /// Dipanggil saat tombol "Yes" pada pop-up Quit Game diklik: benar-benar menutup aplikasi game.
-    /// </summary>
-    public void ConfirmQuitGame()
-    {
-        StartCoroutine(QuitAfterClickSound());
+        StartCoroutine(QuitDirectlyAfterClickSound());
     }
 
     IEnumerator LoadSceneAfterClickSound(string targetScene)
@@ -350,18 +271,17 @@ public class MainMenuController : MonoBehaviour
         isLoadingScene = true;
         PlayButtonClickSFX();
 
-        // Beri jeda singkat 0.15 detik agar suara klik tombol terdengar sebelum pindah scene
         yield return new WaitForSecondsRealtime(0.15f);
 
         SceneManager.LoadScene(targetScene);
     }
 
-    IEnumerator QuitAfterClickSound()
+    IEnumerator QuitDirectlyAfterClickSound()
     {
         PlayButtonClickSFX();
         yield return new WaitForSecondsRealtime(0.15f);
 
-        Debug.Log("Keluar dari Game (Quit Confirmed)!");
+        Debug.Log("Game ditutup dari Main Menu.");
         Application.Quit();
 
 #if UNITY_EDITOR
